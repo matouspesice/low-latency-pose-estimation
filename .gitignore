@@ -1,0 +1,37 @@
+# Python virtual environments
+.venv/
+.venv310/
+.venv_flir/
+venv/
+__pycache__/
+*.py[cod]
+
+# FLIR / local SDK artifacts
+spinnaker_python-*/
+
+# Unity generated folders and IDE artifacts
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Bb]uild/
+[Bb]uilds/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini

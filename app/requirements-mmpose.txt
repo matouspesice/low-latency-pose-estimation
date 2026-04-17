@@ -1,0 +1,16 @@
+# Optional: MMPose backend for pose.py (--backend mmpose)
+# Install after base requirements:
+#   pip install -r requirements.txt -r requirements-mmpose.txt
+#
+# Requires Python 3.10 or 3.11 (mmcv/setuptools break on 3.12+). Use conda:
+#   conda create -n pose python=3.11 -y && conda activate pose
+#   pip install -r requirements.txt -r requirements-mmpose.txt
+#
+# Test both backends: pose.py --backend rtmlib --show-fps
+#                    pose.py --backend mmpose --show-fps
+
+# MMPose stack (needs PyTorch; mmcv may need Python 3.10–3.12)
+mmengine
+mmcv>=2.0.0
+mmdet
+mmpose

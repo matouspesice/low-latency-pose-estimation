@@ -1,0 +1,21 @@
+# Real-time pose from webcam (RTMPose via rtmlib)
+# Install: pip install -r requirements.txt
+#
+# Windows: if you use Python 3.14+ and RapidOCR fails importing onnxruntime, use Python 3.10/3.11
+# and a venv: run setup_venv310.bat from this folder, then run scripts with .venv310\Scripts\python.exe.
+#
+# Default runtime is NVIDIA GPU ONNX; ensure CUDA 12 + cuDNN 9 are on PATH.
+# If you explicitly need CPU-only runtime, install onnxruntime instead.
+
+opencv-python>=4.8.0,<4.13
+rtmlib
+onnxruntime-gpu
+# PySpin 4.3 wheels are built against NumPy 1.x.
+numpy>=1.24,<2
+pytesseract
+# OCR uses the same ONNX Runtime stack as rtmlib.
+rapidocr-onnxruntime
+# FLIR/Spinnaker Python wheel is installed from local SDK package, e.g.:
+#   pip install ../spinnaker_python-4.3.0.189-cp310-cp310-win_amd64/spinnaker_python-4.3.0.189-cp310-cp310-win_amd64.whl
+# Optional PyTorch OCR (separate stack from rtmlib):
+# easyocr
