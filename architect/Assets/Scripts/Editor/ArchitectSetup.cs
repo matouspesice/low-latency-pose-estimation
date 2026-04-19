@@ -7,7 +7,35 @@ using UnityEditor.SceneManagement;
 /// </summary>
 public static class ArchitectSetup
 {
-    /// <summary>One-click: Pose Bridge + all games + full UI. Use on an empty or cleared scene.</summary>
+    static GameObject GetOrCreate(string name)
+    {
+        // GameObject.Find only searches ACTIVE objects in the scene, so it would
+        // return null for any managed GameObject that was SetActive(false) on the
+        // previous run and would cause CreateFullGameSetup to duplicate it on rebuild.
+        // Search inactive-inclusive via Resources.FindObjectsOfTypeAll to stay idempotent.
+        var all = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < all.Length; i++)
+        {
+            var existing = all[i];
+            if (existing == null) continue;
+            if (existing.name != name) continue;
+            if (existing.hideFlags != HideFlags.None) continue;
+            if (!existing.scene.IsValid()) continue;
+            return existing;
+        }
+        var go = new GameObject(name);
+        Undo.RegisterCreatedObjectUndo(go, "Create " + name);
+        return go;
+    }
+
+    static T GetOrAdd<T>(GameObject go) where T : Component
+    {
+        var c = go.GetComponent<T>();
+        if (c != null) return c;
+        return go.AddComponent<T>();
+    }
+
+    /// <summary>One-click idempotent setup: reuses existing objects, rebuilds UI, saves scene.</summary>
     [MenuItem("Architect/Create Complete Setup (Bridge + Games + UI)")]
     public static void CreateCompleteSetup()
     {
@@ -20,24 +48,62 @@ public static class ArchitectSetup
         CreateFullGameSetup();
         ArchitectUIBuilder.BuildGameUI();
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log("[Architect] Complete setup created. Save the scene (Ctrl+S or File -> Save As) when ready.");
+        Debug.Log("[Architect] Complete setup created/updated. Rerunning is safe — existing objects are reused.");
     }
+
     public static void CreatePoseBridge()
     {
-        var go = new GameObject("PoseBridge");
-        go.AddComponent<PoseReceiver>();
-        var driver = go.AddComponent<PoseAvatarDriver>();
+        var go = GetOrCreate("PoseBridge");
+        GetOrAdd<PoseReceiver>(go);
+        var driver = GetOrAdd<PoseAvatarDriver>(go);
         driver.createDebugSkeleton = true;
         driver.createLimbSticks = true;
         driver.mirrorFlipX = true;
         driver.avatarScale = 3.5f;
-        Undo.RegisterCreatedObjectUndo(go, "Create Pose Bridge");
+        GetOrAdd<PoseGestureDetector>(go);
+        var bodyTilt = GetOrAdd<BodyTiltInput>(go);
+        if (bodyTilt.poseGestureDetector == null)
+            bodyTilt.poseGestureDetector = go.GetComponent<PoseGestureDetector>();
         Selection.activeGameObject = go;
         Debug.Log("[Architect] PoseBridge created. Start pose.py with --udp-port 5555 and enter Play mode.");
     }
 
+    /// <summary>
+    /// Removes duplicate GameObjects that share a managed Architect name. The first
+    /// instance found (in Resources enumeration order) is kept, any others are destroyed.
+    /// This lets re-running the setup silently recover from an older build that created
+    /// duplicates due to the GameObject.Find (active-only) bug.
+    /// </summary>
+    static void DedupeManagedObjects()
+    {
+        var managed = new System.Collections.Generic.HashSet<string>
+        {
+            "PoseBridge", "GameSelector",
+            "DodgeGame", "SingleLegBalanceGame", "LeanBalanceGame", "CoinMineGame",
+            "PoseTestMode", "OcrMode", "ClockMode",
+        };
+        var seen = new System.Collections.Generic.HashSet<string>();
+        var all = Resources.FindObjectsOfTypeAll<GameObject>();
+        int destroyed = 0;
+        for (int i = 0; i < all.Length; i++)
+        {
+            var go = all[i];
+            if (go == null) continue;
+            if (go.hideFlags != HideFlags.None) continue;
+            if (!go.scene.IsValid()) continue;
+            if (!managed.Contains(go.name)) continue;
+            if (seen.Add(go.name)) continue;
+            Undo.DestroyObjectImmediate(go);
+            destroyed++;
+        }
+        if (destroyed > 0)
+            Debug.Log($"[Architect] Dedup removed {destroyed} duplicate managed GameObject(s).");
+    }
+
     public static void CreateFullGameSetup()
     {
+        DedupeManagedObjects();
+
         var bridge = Object.FindFirstObjectByType<PoseReceiver>();
         if (bridge == null)
         {
@@ -48,31 +114,36 @@ public static class ArchitectSetup
         if (bridgeGo.GetComponent<PoseGestureDetector>() == null)
             bridgeGo.AddComponent<PoseGestureDetector>();
 
-        var dodgeGo = new GameObject("DodgeGame");
-        dodgeGo.AddComponent<DodgeGameManager>();
+        var dodgeGo = GetOrCreate("DodgeGame");
+        GetOrAdd<DodgeGameManager>(dodgeGo);
 
-        var balanceGo = new GameObject("SingleLegBalanceGame");
-        balanceGo.AddComponent<SingleLegBalanceManager>();
+        var balanceGo = GetOrCreate("SingleLegBalanceGame");
+        GetOrAdd<SingleLegBalanceManager>(balanceGo);
 
-        var leanBalanceGo = new GameObject("LeanBalanceGame");
-        leanBalanceGo.AddComponent<LeanBalanceGameManager>();
+        var leanBalanceGo = GetOrCreate("LeanBalanceGame");
+        GetOrAdd<LeanBalanceGameManager>(leanBalanceGo);
 
-        var coinMineGo = new GameObject("CoinMineGame");
-        coinMineGo.AddComponent<CoinMineGameManager>();
+        var coinMineGo = GetOrCreate("CoinMineGame");
+        var coinMineMgr = GetOrAdd<CoinMineGameManager>(coinMineGo);
+        coinMineMgr.bodyTiltInput = bridgeGo.GetComponent<BodyTiltInput>();
+        coinMineMgr.gestureDetector = bridgeGo.GetComponent<PoseGestureDetector>();
 
-        var testGo = new GameObject("PoseTestMode");
-        testGo.AddComponent<PoseTestMode>();
-        var ocrGo = new GameObject("OcrMode");
-        ocrGo.AddComponent<OcrMode>();
+        var testGo = GetOrCreate("PoseTestMode");
+        GetOrAdd<PoseTestMode>(testGo);
+        var ocrGo = GetOrCreate("OcrMode");
+        GetOrAdd<OcrMode>(ocrGo);
+        var clockGo = GetOrCreate("ClockMode");
+        GetOrAdd<ClockMode>(clockGo);
 
-        var selectorGo = new GameObject("GameSelector");
-        var selector = selectorGo.AddComponent<ArchitectGameSelector>();
+        var selectorGo = GetOrCreate("GameSelector");
+        var selector = GetOrAdd<ArchitectGameSelector>(selectorGo);
         selector.dodgeGame = dodgeGo.GetComponent<DodgeGameManager>();
         selector.balanceGame = balanceGo.GetComponent<SingleLegBalanceManager>();
         selector.leanBalanceGame = leanBalanceGo.GetComponent<LeanBalanceGameManager>();
         selector.coinMineGame = coinMineGo.GetComponent<CoinMineGameManager>();
         selector.poseTest = testGo.GetComponent<PoseTestMode>();
         selector.ocrMode = ocrGo.GetComponent<OcrMode>();
+        selector.clockMode = clockGo.GetComponent<ClockMode>();
 
         dodgeGo.SetActive(false);
         balanceGo.SetActive(false);
@@ -80,14 +151,8 @@ public static class ArchitectSetup
         coinMineGo.SetActive(false);
         testGo.SetActive(false);
         ocrGo.SetActive(false);
+        clockGo.SetActive(false);
 
-        Undo.RegisterCreatedObjectUndo(dodgeGo, "Create Dodge Game");
-        Undo.RegisterCreatedObjectUndo(balanceGo, "Create Balance Game");
-        Undo.RegisterCreatedObjectUndo(leanBalanceGo, "Create Lean Balance Game");
-        Undo.RegisterCreatedObjectUndo(coinMineGo, "Create Coin Mine Game");
-        Undo.RegisterCreatedObjectUndo(testGo, "Create Pose Test");
-        Undo.RegisterCreatedObjectUndo(ocrGo, "Create OCR Mode");
-        Undo.RegisterCreatedObjectUndo(selectorGo, "Create Game Selector");
         Selection.activeGameObject = selectorGo;
         Debug.Log("[Architect] Full game setup created. Add UI (Canvas with buttons for GameSelector, score/lives for Dodge, stability bar for Balance). See ARCHITECT_GAME.md.");
     }

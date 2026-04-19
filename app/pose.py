@@ -15,6 +15,7 @@ Press Q in the window to quit.
 """
 
 import argparse
+import base64
 import json
 import os
 import re
@@ -67,6 +68,7 @@ def _load_config(path):
         "ocr_whitelist",
         "latency_csv",
         "ocr_backend",
+        "clock_roi",
         "camera_auto_exposure",
         "camera_auto_wb",
     )
@@ -82,8 +84,11 @@ def _load_config(path):
         "ocr_exhaustive",
         "log_latency",
         "ocr_rapid_use_text_det",
+        "clock_stream_enable",
+        "clock_stream_separate_udp",
     )
-    float_keys = ("smooth_pose", "ocr_max_fps", "ocr_print_interval", "camera_fps", "camera_exposure")
+    float_keys = ("smooth_pose", "ocr_max_fps", "ocr_print_interval", "camera_fps", "camera_exposure", "clock_stream_max_fps")
+    int_keys = int_keys + ("clock_stream_jpeg_quality", "clock_downscale")
     for k in int_keys:
         if k in raw and isinstance(raw[k], (int, float)):
             out[k] = int(raw[k])
@@ -150,6 +155,12 @@ def parse_args():
         "ocr_exhaustive": False,
         "ocr_backend": "tesseract",
         "ocr_rapid_use_text_det": False,
+        "clock_stream_enable": False,
+        "clock_roi": "",
+        "clock_stream_max_fps": 30.0,
+        "clock_stream_jpeg_quality": 55,
+        "clock_downscale": 192,
+        "clock_stream_separate_udp": True,
     }
     for k, v in config.items():
         if k in defaults:
@@ -390,6 +401,60 @@ def parse_args():
         action="store_true",
         default=defaults.get("ocr_rapid_use_text_det", False),
         help="RapidOCR: enable DB detector (slower). Default off = whole ROI as one line (good for clocks).",
+    )
+    p.add_argument(
+        "--clock-stream-enable",
+        action="store_true",
+        default=defaults.get("clock_stream_enable", False),
+        help="Send live clock ROI image in UDP payload as roiImageBase64.",
+    )
+    p.add_argument(
+        "--clock-roi",
+        type=str,
+        default=defaults.get("clock_roi", ""),
+        metavar="X,Y,W,H",
+        help="Clock ROI in normalized coords [0,1]. Empty = full frame.",
+    )
+    p.add_argument(
+        "--clock-stream-max-fps",
+        type=float,
+        default=defaults.get("clock_stream_max_fps", 30.0),
+        metavar="FPS",
+        help="Maximum image-stream send rate for roiImageBase64 (default 30).",
+    )
+    p.add_argument(
+        "--clock-stream-jpeg-quality",
+        type=int,
+        default=defaults.get("clock_stream_jpeg_quality", 55),
+        metavar="Q",
+        help="JPEG quality (1-100) for roiImageBase64 payload (default 55 — low-latency).",
+    )
+    p.add_argument(
+        "--clock-downscale",
+        type=int,
+        default=defaults.get("clock_downscale", 192),
+        metavar="MAX_DIM",
+        help=(
+            "Downscale the ROI crop so its longest side is <= MAX_DIM pixels before JPEG "
+            "encoding. Drops packet size + decode cost dramatically and removes noise that "
+            "kills JPEG compression. 0 = no downscale. Default 192."
+        ),
+    )
+    p.add_argument(
+        "--clock-stream-separate-udp",
+        action="store_true",
+        default=defaults.get("clock_stream_separate_udp", True),
+        help=(
+            "Send the clock ROI as its own UDP datagram immediately after capture instead of "
+            "bundling it with the pose packet. Keeps ROI latency independent of pose inference. "
+            "Default: on."
+        ),
+    )
+    p.add_argument(
+        "--no-clock-stream-separate-udp",
+        dest="clock_stream_separate_udp",
+        action="store_false",
+        help="Disable the separate ROI datagram and bundle it in the pose packet (legacy behavior).",
     )
     return p.parse_args()
 
@@ -799,6 +864,7 @@ def send_pose_udp(
     smooth_alpha: float = 0,
     prev_pose: list | None = None,
     ocr_text: str | None = None,
+    roi_image_base64: str | None = None,
 ) -> None:
     if sock is None or port <= 0:
         return
@@ -810,6 +876,8 @@ def send_pose_udp(
         prev_pose[0] = payload
     if ocr_text is not None:
         payload["ocrText"] = ocr_text
+    if roi_image_base64 is not None:
+        payload["roiImageBase64"] = roi_image_base64
     if not payload:
         return
     try:
@@ -817,6 +885,24 @@ def send_pose_udp(
         sock.sendto(msg, (host, port))
     except (OSError, TypeError):
         pass  # avoid spamming console on disconnect
+
+
+def send_clock_roi_udp(sock: socket.socket, host: str, port: int, roi_image_base64: str) -> None:
+    """Send ONLY the clock ROI as a small, dedicated UDP datagram.
+
+    This decouples ROI latency from the pose-inference path — the ROI is sent
+    microseconds after capture, independent of how long rtmlib/mmpose take.
+    Unity's PoseReceiver parses the same JSON schema (`roiImageBase64`) either
+    way, so no receiver change is needed. Keypoint-bearing pose packets are
+    still sent separately after inference.
+    """
+    if sock is None or port <= 0 or not roi_image_base64:
+        return
+    try:
+        msg = json.dumps({"roiImageBase64": roi_image_base64}).encode("utf-8")
+        sock.sendto(msg, (host, port))
+    except (OSError, TypeError):
+        pass
 
 
 # -----------------------------------------------------------------------------
@@ -871,6 +957,108 @@ def _parse_ocr_roi(roi_str: str) -> tuple[float, float, float, float] | None:
         )
     except Exception:
         return None
+
+
+def _select_roi_interactive(window_name: str, display_frame, mirrored: bool = True):
+    """Open a modal ROI selector on the currently shown display frame.
+
+    The display frame is usually mirrored (flipped on X) compared to the raw
+    capture. We convert the user-drawn rectangle back into normalized coords
+    of the ORIGINAL (unflipped) frame so they can be reused as --ocr-roi /
+    --clock-roi values or applied to the raw capture for cropping.
+
+    Returns (x, y, w, h) in [0,1] normalized original-frame coords, or None
+    if the user cancelled / drew an empty rectangle.
+    """
+    if display_frame is None:
+        return None
+    h, w = display_frame.shape[:2]
+    if h <= 0 or w <= 0:
+        return None
+    try:
+        x, y, bw, bh = cv2.selectROI(window_name, display_frame, showCrosshair=True, fromCenter=False)
+    except Exception:
+        return None
+    if bw <= 0 or bh <= 0:
+        return None
+    x_norm = x / float(w)
+    y_norm = y / float(h)
+    w_norm = bw / float(w)
+    h_norm = bh / float(h)
+    if mirrored:
+        x_norm = max(0.0, 1.0 - (x_norm + w_norm))
+    x_norm = max(0.0, min(1.0, x_norm))
+    y_norm = max(0.0, min(1.0, y_norm))
+    w_norm = max(0.0, min(1.0, w_norm))
+    h_norm = max(0.0, min(1.0, h_norm))
+    return (x_norm, y_norm, w_norm, h_norm)
+
+
+def _draw_roi_overlay(display_frame, roi_norm, label: str, color, mirrored: bool = True) -> None:
+    """Draw a labelled rectangle for an ROI on the (possibly mirrored) display frame."""
+    if display_frame is None or roi_norm is None:
+        return
+    h, w = display_frame.shape[:2]
+    if h <= 0 or w <= 0:
+        return
+    x, y, bw, bh = roi_norm
+    if mirrored:
+        x_disp = 1.0 - (x + bw)
+    else:
+        x_disp = x
+    x0 = int(max(0, min(w - 1, x_disp * w)))
+    y0 = int(max(0, min(h - 1, y * h)))
+    x1 = int(max(0, min(w, (x_disp + bw) * w)))
+    y1 = int(max(0, min(h, (y + bh) * h)))
+    if x1 <= x0 or y1 <= y0:
+        return
+    cv2.rectangle(display_frame, (x0, y0), (x1, y1), color, 2)
+    cv2.putText(
+        display_frame,
+        label,
+        (x0 + 4, max(15, y0 - 6)),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.5,
+        color,
+        1,
+        cv2.LINE_AA,
+    )
+
+
+def _encode_clock_roi_base64(frame, roi_norm, jpeg_quality: int, max_dim: int = 0) -> str:
+    """Crop `frame` to `roi_norm`, optionally downscale so longest side <= max_dim,
+    JPEG-encode, base64. Downscaling is the single biggest latency win for small
+    clock ROIs: a 400x200 crop -> 192x96 drops pixel count from 80k to ~18k,
+    shrinking both the JPEG bytes and Unity's LoadImage/upload cost by ~4x.
+    """
+    h, w = frame.shape[:2]
+    if h <= 0 or w <= 0:
+        return ""
+    x0, y0, x1, y1 = 0, 0, w, h
+    if roi_norm is not None:
+        rx, ry, rw, rh = roi_norm
+        x0 = max(0, min(w, int(rx * w)))
+        y0 = max(0, min(h, int(ry * h)))
+        x1 = max(0, min(w, int((rx + rw) * w)))
+        y1 = max(0, min(h, int((ry + rh) * h)))
+        if x1 <= x0 or y1 <= y0:
+            return ""
+    crop = frame[y0:y1, x0:x1]
+    if crop.size == 0:
+        return ""
+    if max_dim and max_dim > 0:
+        ch, cw = crop.shape[:2]
+        longest = max(ch, cw)
+        if longest > max_dim:
+            scale = float(max_dim) / float(longest)
+            new_w = max(1, int(round(cw * scale)))
+            new_h = max(1, int(round(ch * scale)))
+            crop = cv2.resize(crop, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    q = max(1, min(100, int(jpeg_quality)))
+    ok, enc = cv2.imencode(".jpg", crop, [int(cv2.IMWRITE_JPEG_QUALITY), q])
+    if not ok:
+        return ""
+    return base64.b64encode(enc.tobytes()).decode("ascii")
 
 
 def _extract_ocr_text(
@@ -1200,10 +1388,17 @@ def main():
             )
     if args.max_frames > 0:
         print(f"Auto-stop: enabled after {args.max_frames} processed frames.")
+    if getattr(args, "clock_stream_enable", False):
+        _clock_max_fps = max(0.1, float(getattr(args, "clock_stream_max_fps", 10.0)))
+        _clock_q = int(getattr(args, "clock_stream_jpeg_quality", 70))
+        print(
+            f"Clock ROI stream: ON | max_fps={_clock_max_fps:.1f} | "
+            f"jpeg_q={_clock_q} | roi={getattr(args, 'clock_roi', '') or 'full-frame'}"
+        )
     if args.no_window:
         print("Window: disabled (--no-window).")
     else:
-        print("Press Q to quit.")
+        print("Keys: [Q] quit | [C] select clock ROI | [O] select OCR ROI | [X] clear ROIs")
     print("(Console: 'load ... onnx' and 'Tracking is on' from rtmlib are normal. Camera warnings are usually harmless.)")
 
     window_name = f"Pose ({backend}) — Q to quit"
@@ -1215,6 +1410,14 @@ def main():
     infer_smooth_ms = 10.0
     latency_samples = []  # (loop_ms, infer_ms) when --log-latency
     ocr_roi = _parse_ocr_roi(args.ocr_roi)
+    clock_roi = _parse_ocr_roi(getattr(args, "clock_roi", ""))
+    clock_stream_enable = bool(getattr(args, "clock_stream_enable", False))
+    clock_stream_max_fps = max(0.1, float(getattr(args, "clock_stream_max_fps", 10.0)))
+    clock_stream_min_dt = 1.0 / clock_stream_max_fps
+    clock_stream_jpeg_quality = int(getattr(args, "clock_stream_jpeg_quality", 55))
+    clock_stream_downscale = int(getattr(args, "clock_downscale", 192) or 0)
+    clock_stream_separate_udp = bool(getattr(args, "clock_stream_separate_udp", True))
+    clock_stream_state = {"last_run_t": 0.0, "last_payload": ""}
     ocr_interval = max(1, int(args.ocr_interval))
     ocr_max_fps = max(0.1, float(args.ocr_max_fps))
     ocr_min_dt = 1.0 / ocr_max_fps
@@ -1233,6 +1436,20 @@ def main():
                 if not ok:
                     break
                 t_capture = time.perf_counter()
+
+                # LOW-LATENCY CLOCK ROI: encode + ship ROI BEFORE pose inference.
+                # The clock stream is independent of the pose pipeline, so by
+                # sending here we avoid ~15-30 ms of inference lag per frame.
+                if clock_stream_enable and clock_stream_separate_udp:
+                    if (t_capture - clock_stream_state["last_run_t"]) >= clock_stream_min_dt:
+                        early_roi = _encode_clock_roi_base64(
+                            frame, clock_roi, clock_stream_jpeg_quality, clock_stream_downscale
+                        )
+                        if early_roi:
+                            send_clock_roi_udp(udp_sock, args.udp_host, args.udp_port, early_roi)
+                            clock_stream_state["last_payload"] = early_roi
+                            clock_stream_state["last_run_t"] = t_capture
+
                 vis, infer_ms, n_persons, pose_data = run_frame(frame)
                 if args.ocr_enable and _ocr_backend_ready(args, rapid_ocr_engine):
                     now = time.perf_counter()
@@ -1285,6 +1502,18 @@ def main():
                         pose_data["ocrText"] = ocr_state["last"]
                     ocr_state["idx"] += 1
                 t_after = time.perf_counter()
+                roi_payload = None
+                # Legacy bundled path: only used when --no-clock-stream-separate-udp.
+                # With the default separate-UDP mode the ROI was already sent above.
+                if clock_stream_enable and not clock_stream_separate_udp:
+                    if (t_after - clock_stream_state["last_run_t"]) >= clock_stream_min_dt:
+                        roi_payload = _encode_clock_roi_base64(
+                            frame, clock_roi, clock_stream_jpeg_quality, clock_stream_downscale
+                        )
+                        clock_stream_state["last_payload"] = roi_payload
+                        clock_stream_state["last_run_t"] = t_after
+                    else:
+                        roi_payload = clock_stream_state["last_payload"]
                 if getattr(args, "log_latency", False):
                     loop_ms = (t_after - t_capture) * 1000
                     latency_samples.append((loop_ms, infer_ms))
@@ -1296,6 +1525,7 @@ def main():
                     getattr(args, "smooth_pose", 0),
                     udp_prev_pose,
                     ocr_state["last"] if args.ocr_enable else None,
+                    roi_payload if (clock_stream_enable and not clock_stream_separate_udp) else None,
                 )
                 with latest_lock:
                     nonlocal latest_result
@@ -1318,6 +1548,7 @@ def main():
         prev_presented_frame_t = None
         prev_display_t = None
         display_fps_smooth = 60.0
+        last_display_vis = None
         while True:
             with latest_lock:
                 if latest_result is not None:
@@ -1365,13 +1596,38 @@ def main():
                         device,
                         data["n_persons"],
                     )
+                    _draw_roi_overlay(display_vis, clock_roi, "CLOCK ROI", (0, 255, 255))
+                    _draw_roi_overlay(display_vis, ocr_roi, "OCR ROI", (0, 255, 0))
                     cv2.imshow(window_name, display_vis)
+                    last_display_vis = display_vis
             if args.no_window:
                 if stop_worker.is_set() and not worker_thread.is_alive():
                     break
                 time.sleep(0.001)
-            elif cv2.waitKey(1) & 0xFF == ord("q"):
-                break
+            else:
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord("q"):
+                    break
+                elif key == ord("c"):
+                    sel = _select_roi_interactive(window_name, last_display_vis)
+                    if sel is not None:
+                        clock_roi = sel
+                        print(
+                            f"[CLOCK] New ROI (normalized, original frame): "
+                            f"{sel[0]:.3f},{sel[1]:.3f},{sel[2]:.3f},{sel[3]:.3f}"
+                        )
+                elif key == ord("o"):
+                    sel = _select_roi_interactive(window_name, last_display_vis)
+                    if sel is not None:
+                        ocr_roi = sel
+                        print(
+                            f"[OCR] New ROI (normalized, original frame): "
+                            f"{sel[0]:.3f},{sel[1]:.3f},{sel[2]:.3f},{sel[3]:.3f}"
+                        )
+                elif key == ord("x"):
+                    clock_roi = None
+                    ocr_roi = None
+                    print("[ROI] Cleared clock + OCR ROIs (using full frame).")
         stop_worker.set()
         worker_thread.join(timeout=1.5)
     else:
@@ -1383,6 +1639,18 @@ def main():
             if not ok:
                 break
             t_capture = time.perf_counter()
+
+            # LOW-LATENCY CLOCK ROI (non-threaded path): send BEFORE pose inference.
+            if clock_stream_enable and clock_stream_separate_udp:
+                if (t_capture - clock_stream_state["last_run_t"]) >= clock_stream_min_dt:
+                    early_roi = _encode_clock_roi_base64(
+                        frame, clock_roi, clock_stream_jpeg_quality, clock_stream_downscale
+                    )
+                    if early_roi:
+                        send_clock_roi_udp(udp_sock, args.udp_host, args.udp_port, early_roi)
+                        clock_stream_state["last_payload"] = early_roi
+                        clock_stream_state["last_run_t"] = t_capture
+
             vis, infer_ms, n_persons, pose_data = run_frame(frame)
             if args.ocr_enable and _ocr_backend_ready(args, rapid_ocr_engine):
                 now = time.perf_counter()
@@ -1435,6 +1703,17 @@ def main():
                     pose_data["ocrText"] = ocr_state["last"]
                 ocr_state["idx"] += 1
             t_after = time.perf_counter()
+            roi_payload = None
+            # Legacy bundled path: only when --no-clock-stream-separate-udp.
+            if clock_stream_enable and not clock_stream_separate_udp:
+                if (t_after - clock_stream_state["last_run_t"]) >= clock_stream_min_dt:
+                    roi_payload = _encode_clock_roi_base64(
+                        frame, clock_roi, clock_stream_jpeg_quality, clock_stream_downscale
+                    )
+                    clock_stream_state["last_payload"] = roi_payload
+                    clock_stream_state["last_run_t"] = t_after
+                else:
+                    roi_payload = clock_stream_state["last_payload"]
             if getattr(args, "log_latency", False):
                 loop_ms = (t_after - t_capture) * 1000
                 latency_samples.append((loop_ms, infer_ms))
@@ -1446,6 +1725,7 @@ def main():
                 getattr(args, "smooth_pose", 0),
                 udp_prev_pose,
                 ocr_state["last"] if args.ocr_enable else None,
+                roi_payload if (clock_stream_enable and not clock_stream_separate_udp) else None,
             )
             elapsed = t_after - t_capture
             h, w = vis.shape[:2]
@@ -1473,12 +1753,36 @@ def main():
                     device,
                     n_persons,
                 )
+                _draw_roi_overlay(display_vis, clock_roi, "CLOCK ROI", (0, 255, 255))
+                _draw_roi_overlay(display_vis, ocr_roi, "OCR ROI", (0, 255, 0))
                 cv2.imshow(window_name, display_vis)
             processed_frames += 1
             if args.max_frames > 0 and processed_frames >= args.max_frames:
                 break
-            if (not args.no_window) and (cv2.waitKey(1) & 0xFF == ord("q")):
-                break
+            if not args.no_window:
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord("q"):
+                    break
+                elif key == ord("c"):
+                    sel = _select_roi_interactive(window_name, display_vis if not args.no_window else None)
+                    if sel is not None:
+                        clock_roi = sel
+                        print(
+                            f"[CLOCK] New ROI (normalized, original frame): "
+                            f"{sel[0]:.3f},{sel[1]:.3f},{sel[2]:.3f},{sel[3]:.3f}"
+                        )
+                elif key == ord("o"):
+                    sel = _select_roi_interactive(window_name, display_vis if not args.no_window else None)
+                    if sel is not None:
+                        ocr_roi = sel
+                        print(
+                            f"[OCR] New ROI (normalized, original frame): "
+                            f"{sel[0]:.3f},{sel[1]:.3f},{sel[2]:.3f},{sel[3]:.3f}"
+                        )
+                elif key == ord("x"):
+                    clock_roi = None
+                    ocr_roi = None
+                    print("[ROI] Cleared clock + OCR ROIs (using full frame).")
 
     cap.release()
     if udp_sock:

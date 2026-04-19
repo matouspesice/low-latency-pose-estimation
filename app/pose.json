@@ -9,9 +9,9 @@
   "width": 640,
   "height": 480,
   "camera_fps": 60.0,
-  "camera_auto_exposure": "manual",
-  "camera_exposure": -6.0,
-  "camera_auto_wb": "off",
+  "camera_auto_exposure": "auto",
+  "camera_exposure": 0.0,
+  "camera_auto_wb": "on",
   "threaded": true,
   "no_window": false,
   "no_viz": false,
@@ -32,5 +32,11 @@
   "max_frames": 0,
   "ocr_flip_x": false,
   "ocr_debug": false,
-  "ocr_exhaustive": false
+  "ocr_exhaustive": false,
+  "clock_stream_enable": false,
+  "clock_roi": "",
+  "clock_stream_max_fps": 30.0,
+  "clock_stream_jpeg_quality": 55,
+  "clock_downscale": 192,
+  "clock_stream_separate_udp": true
 }

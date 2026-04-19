@@ -1,182 +1,427 @@
-using System.Collections.Generic;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
-/// Coin Mine: Temple Run–style. You run in the middle; lean left/center/right to move into lanes.
-/// Coins spawn in left, center, or right lane and move toward you. Lean into the coin's lane to collect.
-/// Clear hint shows which way to lean for the next coin.
+/// Self-contained 3D Coin Collector aligned with the standalone body-tilt project
+/// (CollectCoins). On StartGame() this manager builds its own floor, walls, ball,
+/// coins and follow-camera as children of its GameObject, reads body tilt from the
+/// shared PoseGestureDetector/BodyTiltInput pipeline, and tears everything down on
+/// StopGame()/EndGame(). The ball rolls forward at a constant speed and the player
+/// steers it left/right by leaning their torso, picking up coins for 30 seconds.
 /// </summary>
 public class CoinMineGameManager : MonoBehaviour
 {
-    public const int LaneLeft = 0;
-    public const int LaneCenter = 1;
-    public const int LaneRight = 2;
-
     [Header("Dependencies")]
+    public BodyTiltInput bodyTiltInput;
     public PoseGestureDetector gestureDetector;
 
-    [Header("Lanes (world X positions)")]
-    public float laneLeftX = -2f;
-    public float laneCenterX = 0f;
-    public float laneRightX = 2f;
+    [Header("Movement")]
+    [Tooltip("Forward speed of the ball along +Z.")]
+    public float forwardSpeed = 16f;
+    [Tooltip("Lane half-width. Ball X is clamped to [-sideBound, +sideBound].")]
+    public float sideBound = 5f;
+    [Range(0.5f, 1f)]
+    [Tooltip("How much of the lane tilt uses. 1 = full lane.")]
+    public float tiltLaneRange = 1f;
+    [Range(0f, 0.85f)]
+    [Tooltip("0 = direct (lowest latency), higher = smoother but more lag.")]
+    public float positionSmoothing = 0.15f;
+    [Range(0f, 0.3f)]
+    [Tooltip("Dead zone: tilt below this maps to center.")]
+    public float minTiltToMove = 0.05f;
 
-    [Header("Spawn & movement")]
-    public float spawnZ = 20f;
-    public float collectZ = 2.5f;
-    public float coinSpeed = 8f;
-    public float spawnInterval = 1.8f;
+    [Header("Round")]
+    public float gameDurationSeconds = 30f;
 
-    [Header("Lean thresholds (TorsoLeanX)")]
-    [Tooltip("|lean| below this = center lane.")]
-    [Range(0.02f, 0.08f)]
-    public float centerZone = 0.04f;
+    [Header("Coin path")]
+    public float firstCoinOffsetZ = 25f;
+    public float gapBetweenCoins = 4f;
+    public int totalCoinsToSpawn = 120;
+    public float leftLaneX = -3f;
+    public float middleLaneX = 0f;
+    public float rightLaneX = 3f;
+    public float coinHeight = 1f;
+    public float laneLength = 600f;
 
-    [Header("UI (optional)")]
+    [Header("UI (wired by ArchitectUIBuilder)")]
     public TMP_Text scoreText;
+    public TMP_Text timerText;
     public TMP_Text laneHintText;
     public TMP_Text youAreHereText;
-    public GameObject gameOverPanel;
     public TMP_Text gameOverScoreText;
+    public GameObject gameOverPanel;
     public GameObject startPromptPanel;
 
-    public int Score { get; private set; }
-    public bool IsPlaying { get; private set; }
+    // Runtime-created scene objects (destroyed on StopGame/EndGame)
+    Transform _world;
+    Rigidbody _ballRb;
+    Camera _gameCamera;
+    Camera _previousMainCamera;
+    bool _previousMainCameraWasEnabled;
 
-    float _nextSpawnTime;
-    readonly List<CoinMineCoin> _coins = new List<CoinMineCoin>();
-    static readonly string[] LaneNames = { "LEFT", "CENTER", "RIGHT" };
-    static readonly string[] LeanHint = { "← LEAN LEFT", "○ STAY CENTER", "LEAN RIGHT →" };
+    float _elapsed;
+    int _score;
+    bool _playing;
+    float _smoothedX;
 
-    float LaneX(int lane)
+    public int Score { get { return _score; } }
+    public bool IsPlaying { get { return _playing; } }
+
+    void Awake()
     {
-        if (lane == LaneLeft) return laneLeftX;
-        if (lane == LaneRight) return laneRightX;
-        return laneCenterX;
+        ResolveInputChain();
     }
 
-    int GetPlayerLane()
+    /// <summary>
+    /// Resolve (and if needed, auto-create) the full BodyTiltInput → PoseGestureDetector
+    /// → PoseReceiver chain. This exists because older scene builds may have a PoseBridge
+    /// that is missing BodyTiltInput or PoseGestureDetector (earlier versions of
+    /// ArchitectSetup.CreatePoseBridge didn't add them). Instead of forcing the user to
+    /// rebuild the scene, we attach the missing components to the same GameObject that
+    /// already hosts PoseReceiver so the tilt pipeline comes alive at runtime.
+    /// </summary>
+    void ResolveInputChain()
     {
-        if (gestureDetector == null) return LaneCenter;
-        float lean = gestureDetector.TorsoLeanX;
-        if (lean < -centerZone) return LaneLeft;
-        if (lean > centerZone) return LaneRight;
-        return LaneCenter;
-    }
+        var receiver = FindFirstObjectByType<PoseReceiver>();
 
-    void Start()
-    {
         if (gestureDetector == null)
             gestureDetector = FindFirstObjectByType<PoseGestureDetector>();
-        StopGame();
+        if (gestureDetector == null && receiver != null)
+            gestureDetector = receiver.gameObject.AddComponent<PoseGestureDetector>();
+        if (gestureDetector != null && gestureDetector.poseReceiver == null)
+            gestureDetector.poseReceiver = receiver;
+
+        if (bodyTiltInput == null)
+            bodyTiltInput = FindFirstObjectByType<BodyTiltInput>();
+        if (bodyTiltInput == null && gestureDetector != null)
+            bodyTiltInput = gestureDetector.gameObject.AddComponent<BodyTiltInput>();
+        if (bodyTiltInput != null && bodyTiltInput.poseGestureDetector == null)
+            bodyTiltInput.poseGestureDetector = gestureDetector;
     }
 
-    void Update()
+    void OnEnable()
     {
-        if (!IsPlaying) return;
-
-        int playerLane = GetPlayerLane();
-
-        for (int i = _coins.Count - 1; i >= 0; i--)
-        {
-            var coin = _coins[i];
-            if (coin == null) { _coins.RemoveAt(i); continue; }
-            if (coin.ReachedCollectZone)
-            {
-                if (coin.Lane == playerLane)
-                {
-                    Score++;
-                    if (laneHintText != null) laneHintText.text = "✓ Collected!";
-                }
-                Destroy(coin.gameObject);
-                _coins.RemoveAt(i);
-            }
-        }
-
-        if (Time.time >= _nextSpawnTime)
-        {
-            SpawnCoin();
-            _nextSpawnTime = Time.time + spawnInterval;
-        }
-
-        UpdateNextCoinHint(playerLane);
-        if (youAreHereText != null)
-            youAreHereText.text = "You: " + LaneNames[playerLane];
-        if (scoreText != null)
-            scoreText.text = "Coins: " + Score;
+        UpdateTimerText(gameDurationSeconds);
+        UpdateScoreText();
+        if (startPromptPanel != null) startPromptPanel.SetActive(true);
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
     }
 
-    void UpdateNextCoinHint(int playerLane)
+    void OnDisable()
     {
-        if (laneHintText == null) return;
-        CoinMineCoin next = null;
-        float nearestZ = float.MaxValue;
-        foreach (var c in _coins)
-        {
-            if (c == null) continue;
-            if (c.transform.position.z < nearestZ && c.transform.position.z > collectZ + 2f)
-            {
-                nearestZ = c.transform.position.z;
-                next = c;
-            }
-        }
-        if (next != null)
-            laneHintText.text = LeanHint[next.Lane] + " for coin!";
-    }
-
-    void SpawnCoin()
-    {
-        int lane = Random.Range(0, 3);
-        float x = LaneX(lane);
-        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        go.name = "Coin";
-        go.transform.position = new Vector3(x, 1.2f, spawnZ);
-        go.transform.localScale = Vector3.one * 0.8f;
-        var col = go.GetComponent<Collider>();
-        if (col != null) col.enabled = false;
-        var renderer = go.GetComponent<Renderer>();
-        if (renderer != null && renderer.material != null)
-            renderer.material.color = new Color(1f, 0.85f, 0.2f);
-
-        var coin = go.AddComponent<CoinMineCoin>();
-        coin.Lane = lane;
-        coin.Speed = coinSpeed;
-        coin.CollectZ = collectZ;
-        _coins.Add(coin);
+        TearDownWorld();
+        _playing = false;
     }
 
     public void StartGame()
     {
-        Score = 0;
-        IsPlaying = true;
-        _nextSpawnTime = Time.time + 1f;
-        ClearCoins();
-        if (laneHintText != null) laneHintText.text = "Lean to match the coin's lane!";
+        TearDownWorld();
+        BuildWorld();
+        _elapsed = 0f;
+        _score = 0;
+        _smoothedX = 0f;
+        _playing = true;
+        UpdateScoreText();
+        UpdateTimerText(gameDurationSeconds);
+        if (laneHintText != null) laneHintText.text = "Lean to steer the ball!";
+        if (youAreHereText != null) youAreHereText.text = "You: CENTER";
         if (startPromptPanel != null) startPromptPanel.SetActive(false);
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
     }
 
     public void StopGame()
     {
-        IsPlaying = false;
-        ClearCoins();
+        _playing = false;
+        _elapsed = 0f;
+        _score = 0;
+        TearDownWorld();
+        UpdateScoreText();
+        UpdateTimerText(gameDurationSeconds);
         if (startPromptPanel != null) startPromptPanel.SetActive(true);
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
     }
 
     public void EndGame()
     {
-        IsPlaying = false;
-        ClearCoins();
-        if (gameOverPanel != null) gameOverPanel.SetActive(true);
-        if (gameOverScoreText != null) gameOverScoreText.text = "Coins: " + Score;
+        _playing = false;
+        if (_ballRb != null) _ballRb.linearVelocity = Vector3.zero;
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.transform.SetAsLastSibling();
+            gameOverPanel.SetActive(true);
+        }
+        if (gameOverScoreText != null) gameOverScoreText.text = "Coins: " + _score;
         if (startPromptPanel != null) startPromptPanel.SetActive(false);
     }
 
-    void ClearCoins()
+    void FixedUpdate()
     {
-        foreach (var c in _coins)
-            if (c != null) Destroy(c.gameObject);
-        _coins.Clear();
+        if (!_playing || _ballRb == null) return;
+
+        _elapsed += Time.fixedDeltaTime;
+        if (_elapsed >= gameDurationSeconds)
+        {
+            UpdateTimerText(0f);
+            EndGame();
+            return;
+        }
+        UpdateTimerText(gameDurationSeconds - _elapsed);
+
+        // Forward velocity
+        var vel = _ballRb.linearVelocity;
+        vel.z = forwardSpeed;
+        vel.x = 0f;
+        _ballRb.linearVelocity = vel;
+
+        // Tilt -> target X. Re-resolve (and auto-attach) the full input chain every
+        // physics step so a scene rebuilt mid-play or an old PoseBridge missing
+        // BodyTiltInput/PoseGestureDetector can't leave us steering with null refs.
+        if (bodyTiltInput == null || bodyTiltInput.poseGestureDetector == null
+            || (bodyTiltInput.poseGestureDetector != null && bodyTiltInput.poseGestureDetector.poseReceiver == null))
+        {
+            ResolveInputChain();
+        }
+
+        float axis = 0f;
+        string source = "no-input";
+        if (bodyTiltInput != null)
+        {
+            var gd = bodyTiltInput.poseGestureDetector;
+            if (gd == null) source = "no-gesture-detector";
+            else if (gd.poseReceiver == null) source = "no-pose-receiver";
+            else if (!gd.poseReceiver.HasReceivedPose) source = "waiting-for-pose";
+            else
+            {
+                axis = bodyTiltInput.TiltAxis;
+                source = $"axis={axis:+0.00;-0.00; 0.00}";
+                if (Mathf.Abs(axis) < minTiltToMove) axis = 0f;
+            }
+        }
+        float targetX = Mathf.Clamp(axis * sideBound * tiltLaneRange, -sideBound, sideBound);
+        _smoothedX = Mathf.Lerp(_smoothedX, targetX, 1f - positionSmoothing);
+
+        // Apply X through both the Rigidbody and the Transform so a residual
+        // physics state (frozen constraint, queued velocity) cannot cancel the
+        // steering. Non-kinematic MovePosition alone is sometimes ignored when
+        // the body was just built and has a mid-step cache.
+        var pos = _ballRb.transform.position;
+        pos.x = _smoothedX;
+        _ballRb.position = pos;
+        _ballRb.MovePosition(pos);
+
+        if (youAreHereText != null)
+        {
+            string lane = _smoothedX < -0.5f ? "LEFT" : (_smoothedX > 0.5f ? "RIGHT" : "CENTER");
+            youAreHereText.text = $"You: {lane}  ({source})";
+        }
+    }
+
+    void LateUpdate()
+    {
+        if (_ballRb == null || _gameCamera == null) return;
+        // Camera stays behind and above the ball, looking ahead along the lane.
+        // This keeps the ball roughly in the center of the view while the lane
+        // and coins appear to move past underneath it.
+        var ballPos = _ballRb.transform.position;
+        _gameCamera.transform.position = new Vector3(ballPos.x * 0.25f, 5f, ballPos.z - 8f);
+        _gameCamera.transform.LookAt(new Vector3(ballPos.x, 1f, ballPos.z + 6f));
+    }
+
+    /// <summary>Called by CoinMineCoin when the ball enters a coin trigger.</summary>
+    public void OnCoinCollected(GameObject coin)
+    {
+        if (!_playing || coin == null) return;
+        coin.SetActive(false);
+        _score++;
+        UpdateScoreText();
+    }
+
+    void UpdateScoreText()
+    {
+        if (scoreText != null) scoreText.text = "Coins: " + _score;
+    }
+
+    void UpdateTimerText(float secondsLeft)
+    {
+        if (timerText == null) return;
+        int s = Mathf.Max(0, Mathf.CeilToInt(secondsLeft));
+        timerText.text = "Time: " + s + "s";
+    }
+
+    // ── World construction ────────────────────────────────────────────────
+
+    void BuildWorld()
+    {
+        var worldGo = new GameObject("CoinMineWorld");
+        worldGo.transform.SetParent(transform, false);
+        _world = worldGo.transform;
+
+        BuildFloor(_world);
+        BuildWalls(_world);
+        BuildBall(_world);
+        BuildCoins(_world);
+        BuildCamera(_world);
+    }
+
+    void TearDownWorld()
+    {
+        RestoreMainCamera();
+        if (_world != null)
+        {
+            if (Application.isPlaying) Destroy(_world.gameObject);
+            else DestroyImmediate(_world.gameObject);
+            _world = null;
+        }
+        _ballRb = null;
+        _gameCamera = null;
+    }
+
+    /// <summary>
+    /// Creates a material that works in both URP and Built-in pipelines. URP uses
+    /// `_BaseColor`, Built-in uses `_Color`. Without this the shader lookup fails
+    /// and everything renders pink ("missing shader").
+    /// </summary>
+    static Material MakePipelineMaterial(Color color)
+    {
+        var shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null) shader = Shader.Find("Standard");
+        if (shader == null) shader = Shader.Find("Unlit/Color");
+        var mat = new Material(shader);
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
+        if (mat.HasProperty("_Color")) mat.color = color;
+        return mat;
+    }
+
+    void BuildFloor(Transform parent)
+    {
+        var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        floor.name = "Floor";
+        floor.transform.SetParent(parent, false);
+        float totalLength = laneLength + 15f;
+        float centerZ = (laneLength - 15f) * 0.5f;
+        floor.transform.localPosition = new Vector3(0f, -0.25f, centerZ);
+        floor.transform.localScale = new Vector3(2f * sideBound, 0.5f, totalLength);
+        var renderer = floor.GetComponent<Renderer>();
+        if (renderer != null) renderer.material = MakePipelineMaterial(new Color(0.25f, 0.45f, 0.28f));
+    }
+
+    void BuildWalls(Transform parent)
+    {
+        BuildWall(parent, "WallLeft", -sideBound);
+        BuildWall(parent, "WallRight", sideBound);
+    }
+
+    void BuildWall(Transform parent, string name, float x)
+    {
+        var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        wall.name = name;
+        wall.transform.SetParent(parent, false);
+        wall.transform.localPosition = new Vector3(x, 1.5f, laneLength * 0.5f);
+        wall.transform.localScale = new Vector3(1f, 3f, laneLength);
+        var r = wall.GetComponent<Renderer>();
+        if (r != null) r.enabled = false;
+    }
+
+    void BuildBall(Transform parent)
+    {
+        var ball = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        ball.name = "Player";
+        ball.tag = "Player";
+        ball.transform.SetParent(parent, false);
+        ball.transform.localPosition = new Vector3(0f, 0.5f, 0f);
+        var rb = ball.GetComponent<Rigidbody>();
+        if (rb == null) rb = ball.AddComponent<Rigidbody>();
+        rb.useGravity = true;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        var trigger = ball.AddComponent<CoinMineBallTrigger>();
+        trigger.manager = this;
+        var r = ball.GetComponent<Renderer>();
+        if (r != null) r.material = MakePipelineMaterial(new Color(0.95f, 0.25f, 0.25f));
+        _ballRb = rb;
+    }
+
+    void BuildCoins(Transform parent)
+    {
+        float laneEndZ = laneLength - 5f;
+        int maxCoins = Mathf.Max(0, Mathf.FloorToInt((laneEndZ - firstCoinOffsetZ) / gapBetweenCoins) + 1);
+        int toSpawn = Mathf.Min(totalCoinsToSpawn, maxCoins);
+
+        int prevLane = -1;
+        for (int i = 0; i < toSpawn; i++)
+        {
+            int lane;
+            if (prevLane < 0) lane = Random.Range(0, 3);
+            else
+            {
+                int a = (prevLane + 1) % 3;
+                int b = (prevLane + 2) % 3;
+                lane = Random.Range(0, 2) == 0 ? a : b;
+            }
+            prevLane = lane;
+
+            float x = lane == 0 ? leftLaneX : (lane == 1 ? middleLaneX : rightLaneX);
+            float z = firstCoinOffsetZ + i * gapBetweenCoins;
+
+            var coin = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            coin.name = "Coin_" + i;
+            coin.transform.SetParent(parent, false);
+            coin.transform.localPosition = new Vector3(x, coinHeight, z);
+            coin.transform.localScale = new Vector3(0.8f, 0.08f, 0.8f);
+            coin.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+
+            // Replace the default primitive collider with an explicit SphereCollider
+            // slightly larger than the visual disc so the fast-moving ball always
+            // overlaps the trigger (continuous detection plus a generous radius
+            // prevents tunnelling at forwardSpeed ≈ 16 units/s).
+            var oldCol = coin.GetComponent<Collider>();
+            if (oldCol != null)
+            {
+                if (Application.isPlaying) Destroy(oldCol);
+                else DestroyImmediate(oldCol);
+            }
+            var sphere = coin.AddComponent<SphereCollider>();
+            sphere.isTrigger = true;
+            sphere.radius = 0.9f;
+
+            var r = coin.GetComponent<Renderer>();
+            if (r != null) r.material = MakePipelineMaterial(new Color(1f, 0.82f, 0.1f));
+
+            coin.AddComponent<CoinMineCoinRotator>();
+        }
+    }
+
+    void BuildCamera(Transform parent)
+    {
+        var camGo = new GameObject("CoinMineCamera");
+        camGo.transform.SetParent(parent, false);
+        _gameCamera = camGo.AddComponent<Camera>();
+        _gameCamera.clearFlags = CameraClearFlags.SolidColor;
+        _gameCamera.backgroundColor = new Color(0.55f, 0.75f, 0.95f);
+        _gameCamera.fieldOfView = 60f;
+        _gameCamera.nearClipPlane = 0.1f;
+        _gameCamera.farClipPlane = 800f;
+        _gameCamera.transform.position = new Vector3(0f, 6f, -10f);
+        _gameCamera.transform.LookAt(new Vector3(0f, 0.5f, -2f));
+        _gameCamera.depth = 10f;
+
+        _previousMainCamera = Camera.main;
+        if (_previousMainCamera != null && _previousMainCamera != _gameCamera)
+        {
+            _previousMainCameraWasEnabled = _previousMainCamera.enabled;
+            _previousMainCamera.enabled = false;
+        }
+    }
+
+    void RestoreMainCamera()
+    {
+        if (_previousMainCamera != null)
+        {
+            _previousMainCamera.enabled = _previousMainCameraWasEnabled;
+        }
+        _previousMainCamera = null;
+        _previousMainCameraWasEnabled = false;
     }
 }

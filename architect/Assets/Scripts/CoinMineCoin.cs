@@ -1,19 +1,32 @@
 using UnityEngine;
 
 /// <summary>
-/// Single coin in Coin Mine: moves toward the player (negative Z). Lane 0=left, 1=center, 2=right.
+/// Attached to the ball in Coin Mine. Forwards coin-trigger collisions back to the manager.
 /// </summary>
-public class CoinMineCoin : MonoBehaviour
+public class CoinMineBallTrigger : MonoBehaviour
 {
-    public int Lane { get; set; }
-    public float Speed { get; set; }
-    public float CollectZ { get; set; }
-    public bool ReachedCollectZone => transform.position.z <= CollectZ;
+    public CoinMineGameManager manager;
 
+    void OnTriggerEnter(Collider other)
+    {
+        if (manager == null || other == null) return;
+        // Identify coins by the rotator component rather than a tag, because
+        // the "Coin" tag would need to be registered in the project TagManager
+        // (assigning an undefined tag throws and leaves the object untagged,
+        // so the ball would silently pass through every coin).
+        var rotator = other.GetComponent<CoinMineCoinRotator>()
+                      ?? other.GetComponentInParent<CoinMineCoinRotator>();
+        if (rotator == null) return;
+        manager.OnCoinCollected(rotator.gameObject);
+    }
+}
+
+/// <summary>Simple rotator so coins visually spin in place.</summary>
+public class CoinMineCoinRotator : MonoBehaviour
+{
+    public Vector3 rotationSpeed = new Vector3(15f, 45f, 30f);
     void Update()
     {
-        var p = transform.position;
-        p.z -= Speed * Time.deltaTime;
-        transform.position = p;
+        transform.Rotate(rotationSpeed * Time.deltaTime);
     }
 }

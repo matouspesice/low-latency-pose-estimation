@@ -18,14 +18,22 @@ public class PoseReceiver : MonoBehaviour
 
     [Tooltip("Latest OCR text from UDP payload (can be updated even without a valid pose packet).")]
     public string latestOcrText = "";
+    [Tooltip("Latest clock ROI image payload from UDP (base64-encoded image).")]
+    public string latestClockRoiBase64 = "";
 
     [Tooltip("Minimum confidence (0-1) to consider a keypoint valid.")]
     [Range(0f, 1f)]
     public float minConfidence = 0.3f;
 
     Socket _socket;
-    byte[] _buffer = new byte[4096];
+    // 128 KB: plain pose JSON is ~1 KB, but when pose.py streams the Clock ROI
+    // (base64-encoded JPEG crop in the same datagram via --clock-stream-enable),
+    // packets routinely reach 5-20 KB. A 4 KB buffer triggered WSAEMSGSIZE on
+    // Windows and every oversized datagram was dropped — pose and ROI alike.
+    byte[] _buffer = new byte[128 * 1024];
     bool _receivedAny;
+    bool _loggedMsgSizeHint;
+    bool _loggedFirstReceive;
 
     void Start()
     {
@@ -34,7 +42,8 @@ public class PoseReceiver : MonoBehaviour
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _socket.Bind(new IPEndPoint(IPAddress.Any, port));
             _socket.Blocking = false;
-            Debug.Log($"[PoseReceiver] Listening on port {port}. Start pose.py with --udp-port {port}");
+            _socket.ReceiveBufferSize = 1 << 20; // 1 MB OS-level RX buffer, plenty for 30+ FPS ROI stream.
+            Debug.Log($"[PoseReceiver] Listening on port {port} (rx buffer {_buffer.Length} B). Start pose.py with --udp-port {port}");
         }
         catch (Exception e)
         {
@@ -59,8 +68,15 @@ public class PoseReceiver : MonoBehaviour
                 var pose = JsonUtility.FromJson<PoseMessage>(json);
                 if (pose != null)
                 {
+                    if (!_loggedFirstReceive)
+                    {
+                        _loggedFirstReceive = true;
+                        Debug.Log($"[PoseReceiver] First UDP packet received ({count} B, keypoints={(pose.keypoints == null ? 0 : pose.keypoints.Length)}, roiBase64Len={(pose.roiImageBase64 == null ? 0 : pose.roiImageBase64.Length)}).");
+                    }
                     if (!string.IsNullOrWhiteSpace(pose.ocrText))
                         latestOcrText = pose.ocrText;
+                    if (!string.IsNullOrWhiteSpace(pose.roiImageBase64))
+                        latestClockRoiBase64 = pose.roiImageBase64;
 
                     if (pose.keypoints != null && pose.keypoints.Length >= 17)
                     {
@@ -69,8 +85,15 @@ public class PoseReceiver : MonoBehaviour
                     }
                 }
             }
-            catch (SocketException)
+            catch (SocketException ex)
             {
+                // WSAEMSGSIZE = 10040: incoming datagram was larger than _buffer and was truncated.
+                if (!_loggedMsgSizeHint && ex.SocketErrorCode == SocketError.MessageSize)
+                {
+                    _loggedMsgSizeHint = true;
+                    Debug.LogWarning($"[PoseReceiver] UDP datagram larger than rx buffer ({_buffer.Length} B) — " +
+                                     "increase `_buffer` size or lower --clock-stream-jpeg-quality / ROI resolution in pose.py.");
+                }
                 break;
             }
             catch (Exception)
@@ -106,4 +129,6 @@ public class PoseReceiver : MonoBehaviour
 
     /// <summary>Latest OCR text, if available from UDP payload.</summary>
     public string LatestOcrText => latestOcrText;
+    /// <summary>Latest clock ROI image payload (base64-encoded), if available.</summary>
+    public string LatestClockRoiBase64 => latestClockRoiBase64;
 }

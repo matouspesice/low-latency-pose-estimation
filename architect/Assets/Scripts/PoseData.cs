@@ -20,6 +20,7 @@ public class PoseMessage
     public int width;
     public int height;
     public string ocrText;
+    public string roiImageBase64;
 }
 
 /// <summary>

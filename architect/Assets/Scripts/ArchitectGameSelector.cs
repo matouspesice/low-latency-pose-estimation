@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Select between Pose Dodge, Single-Leg Balance, and Pose Test.
@@ -15,7 +16,8 @@ public class ArchitectGameSelector : MonoBehaviour
         LeanBalance,
         CoinMine,
         PoseTest,
-        Ocr
+        Ocr,
+        Clock
     }
 
     [Header("Game managers")]
@@ -25,6 +27,7 @@ public class ArchitectGameSelector : MonoBehaviour
     public CoinMineGameManager coinMineGame;
     public PoseTestMode poseTest;
     public OcrMode ocrMode;
+    public ClockMode clockMode;
 
     [Header("Mode selection UI")]
     public GameObject modeSelectPanel;
@@ -34,6 +37,7 @@ public class ArchitectGameSelector : MonoBehaviour
     public Button coinMineButton;
     public Button poseTestButton;
     public Button ocrButton;
+    public Button clockButton;
     public Button backToMenuButton;
 
     [Header("Game UI panels")]
@@ -43,6 +47,7 @@ public class ArchitectGameSelector : MonoBehaviour
     public GameObject coinMineUIPanel;
     public GameObject poseTestUIPanel;
     public GameObject ocrUIPanel;
+    public GameObject clockUIPanel;
 
     public Mode CurrentMode { get; private set; }
 
@@ -54,6 +59,18 @@ public class ArchitectGameSelector : MonoBehaviour
         if (coinMineGame == null) coinMineGame = FindFirstObjectByType<CoinMineGameManager>();
         if (poseTest == null) poseTest = FindFirstObjectByType<PoseTestMode>();
         if (ocrMode == null) ocrMode = FindFirstObjectByType<OcrMode>();
+        if (clockMode == null) clockMode = FindFirstObjectByType<ClockMode>();
+
+        // Find UI panels by name if inspector references are missing (e.g. scene was saved
+        // with stale references). This guarantees a clean start screen on Play.
+        if (modeSelectPanel == null) modeSelectPanel = FindInactiveGameObjectByName("ModeSelectPanel");
+        if (dodgeUIPanel == null) dodgeUIPanel = FindInactiveGameObjectByName("DodgeUIPanel");
+        if (balanceUIPanel == null) balanceUIPanel = FindInactiveGameObjectByName("BalanceUIPanel");
+        if (leanBalanceUIPanel == null) leanBalanceUIPanel = FindInactiveGameObjectByName("LeanBalanceUIPanel");
+        if (coinMineUIPanel == null) coinMineUIPanel = FindInactiveGameObjectByName("CoinMineUIPanel");
+        if (poseTestUIPanel == null) poseTestUIPanel = FindInactiveGameObjectByName("PoseTestUIPanel");
+        if (ocrUIPanel == null) ocrUIPanel = FindInactiveGameObjectByName("OcrUIPanel");
+        if (clockUIPanel == null) clockUIPanel = FindInactiveGameObjectByName("ClockUIPanel");
 
         if (poseDodgeButton != null) poseDodgeButton.onClick.AddListener(SelectPoseDodge);
         if (singleLegBalanceButton != null) singleLegBalanceButton.onClick.AddListener(SelectSingleLegBalance);
@@ -61,9 +78,26 @@ public class ArchitectGameSelector : MonoBehaviour
         if (coinMineButton != null) coinMineButton.onClick.AddListener(SelectCoinMine);
         if (poseTestButton != null) poseTestButton.onClick.AddListener(SelectPoseTest);
         if (ocrButton != null) ocrButton.onClick.AddListener(SelectOcr);
+        if (clockButton != null) clockButton.onClick.AddListener(SelectClock);
         if (backToMenuButton != null) backToMenuButton.onClick.AddListener(BackToMenu);
 
         ShowModeSelect();
+        if (modeSelectPanel != null) modeSelectPanel.transform.SetAsLastSibling();
+    }
+
+    static GameObject FindInactiveGameObjectByName(string name)
+    {
+        var all = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < all.Length; i++)
+        {
+            var go = all[i];
+            if (go == null) continue;
+            if (go.name != name) continue;
+            if (go.hideFlags != HideFlags.None) continue;
+            if (!go.scene.IsValid()) continue;
+            return go;
+        }
+        return null;
     }
 
     void ShowModeSelect()
@@ -158,6 +192,20 @@ public class ArchitectGameSelector : MonoBehaviour
         }
     }
 
+    public void SelectClock()
+    {
+        CurrentMode = Mode.Clock;
+        if (modeSelectPanel != null) modeSelectPanel.SetActive(false);
+        HideAllGameUI();
+        DisableAllGames();
+        if (clockUIPanel != null) clockUIPanel.SetActive(true);
+        if (clockMode != null)
+        {
+            clockMode.gameObject.SetActive(true);
+            clockMode.Activate();
+        }
+    }
+
     public void BackToMenu()
     {
         CurrentMode = Mode.None;
@@ -166,14 +214,42 @@ public class ArchitectGameSelector : MonoBehaviour
         if (modeSelectPanel != null) modeSelectPanel.SetActive(true);
     }
 
+    static readonly string[] AllGamePanelNames =
+    {
+        "DodgeUIPanel",
+        "BalanceUIPanel",
+        "LeanBalanceUIPanel",
+        "CoinMineUIPanel",
+        "PoseTestUIPanel",
+        "OcrUIPanel",
+        "ClockUIPanel",
+    };
+
     void HideAllGameUI()
     {
+        // Hide via inspector references first
         if (dodgeUIPanel != null) dodgeUIPanel.SetActive(false);
         if (balanceUIPanel != null) balanceUIPanel.SetActive(false);
         if (leanBalanceUIPanel != null) leanBalanceUIPanel.SetActive(false);
         if (coinMineUIPanel != null) coinMineUIPanel.SetActive(false);
         if (poseTestUIPanel != null) poseTestUIPanel.SetActive(false);
         if (ocrUIPanel != null) ocrUIPanel.SetActive(false);
+        if (clockUIPanel != null) clockUIPanel.SetActive(false);
+
+        // Also scan the scene for any panel GameObject by name and hide it, in case
+        // a stale copy from an earlier build still exists without an inspector reference.
+        var all = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < all.Length; i++)
+        {
+            var go = all[i];
+            if (go == null) continue;
+            if (go.hideFlags != HideFlags.None) continue;
+            if (!go.scene.IsValid()) continue;
+            for (int n = 0; n < AllGamePanelNames.Length; n++)
+            {
+                if (go.name == AllGamePanelNames[n]) { go.SetActive(false); break; }
+            }
+        }
     }
 
     void DisableAllGames()
@@ -184,5 +260,11 @@ public class ArchitectGameSelector : MonoBehaviour
         if (coinMineGame != null) { coinMineGame.StopGame(); coinMineGame.gameObject.SetActive(false); }
         if (poseTest != null) { poseTest.Deactivate(); poseTest.gameObject.SetActive(false); }
         if (ocrMode != null) { ocrMode.Deactivate(); ocrMode.gameObject.SetActive(false); }
+        if (clockMode != null) { clockMode.Deactivate(); clockMode.gameObject.SetActive(false); }
+    }
+
+    public void ReturnToStartMenuScene()
+    {
+        SceneManager.LoadScene(0);
     }
 }

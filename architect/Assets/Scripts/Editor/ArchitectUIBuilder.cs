@@ -11,8 +11,43 @@ using UnityEngine.Events;
 /// </summary>
 public static class ArchitectUIBuilder
 {
+    static readonly string[] GeneratedUiRootNames =
+    {
+        "GameCanvas",
+        "ModeSelectPanel",
+        "DodgeUIPanel",
+        "BalanceUIPanel",
+        "LeanBalanceUIPanel",
+        "CoinMineUIPanel",
+        "PoseTestUIPanel",
+        "OcrUIPanel",
+        "ClockUIPanel",
+    };
+
+    static void CleanupGeneratedUI()
+    {
+        var all = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < all.Length; i++)
+        {
+            var t = all[i];
+            if (t == null) continue;
+            var name = t.gameObject.name;
+            for (int n = 0; n < GeneratedUiRootNames.Length; n++)
+            {
+                if (name == GeneratedUiRootNames[n])
+                {
+                    Undo.DestroyObjectImmediate(t.gameObject);
+                    break;
+                }
+            }
+        }
+    }
+
     public static void BuildGameUI()
     {
+        // Clean previous generated UI to avoid duplicate full-screen overlays and stale wiring.
+        CleanupGeneratedUI();
+
         var selector = Object.FindFirstObjectByType<ArchitectGameSelector>();
         if (selector == null)
         {
@@ -26,6 +61,7 @@ public static class ArchitectUIBuilder
         var coinMineMgr = Object.FindFirstObjectByType<CoinMineGameManager>(FindObjectsInactive.Include);
         var testMode = Object.FindFirstObjectByType<PoseTestMode>(FindObjectsInactive.Include);
         var ocrMode = Object.FindFirstObjectByType<OcrMode>(FindObjectsInactive.Include);
+        var clockMode = Object.FindFirstObjectByType<ClockMode>(FindObjectsInactive.Include);
         if (dodgeMgr == null || balanceMgr == null)
         {
             EditorUtility.DisplayDialog("Architect",
@@ -59,38 +95,71 @@ public static class ArchitectUIBuilder
         SetAnchored(title, new Vector2(0.5f, 0.78f), new Vector2(600, 70));
 
         var subtitle = CreateTMPText(modePanel.transform, "Subtitle", "Choose a mode", 24, TextAlignmentOptions.Center);
-        SetAnchored(subtitle, new Vector2(0.5f, 0.68f), new Vector2(400, 35));
+        SetAnchored(subtitle, new Vector2(0.5f, 0.70f), new Vector2(400, 35));
         subtitle.GetComponent<TMP_Text>().color = new Color(0.7f, 0.7f, 0.7f);
 
+        // 4-column mode grid
+        float left = 0.14f;
+        float gapX = 0.24f;
+        float row1BtnY = 0.56f;
+        float row1DescY = 0.52f;
+        float row2BtnY = 0.40f;
+        float row2DescY = 0.36f;
+
         var dodgeBtn = CreateTMPButton(modePanel.transform, "PoseDodgeButton", "Pose Dodge");
-        SetAnchored(dodgeBtn, new Vector2(0.5f, 0.55f), new Vector2(340, 60));
+        SetAnchored(dodgeBtn, new Vector2(left + gapX * 0f, row1BtnY), new Vector2(320, 58));
+        var dodgeDesc = CreateTMPText(modePanel.transform, "PoseDodgeDescription", "Dodge obstacles with full-body motion.", 17, TextAlignmentOptions.Center);
+        SetAnchored(dodgeDesc, new Vector2(left + gapX * 0f, row1DescY), new Vector2(360, 30));
+        dodgeDesc.GetComponent<TMP_Text>().color = new Color(0.83f, 0.83f, 0.86f);
 
         var balanceBtn = CreateTMPButton(modePanel.transform, "SingleLegBalanceButton", "Single-Leg Balance");
-        SetAnchored(balanceBtn, new Vector2(0.5f, 0.46f), new Vector2(340, 60));
+        SetAnchored(balanceBtn, new Vector2(left + gapX * 1f, row1BtnY), new Vector2(320, 58));
+        var balanceDesc = CreateTMPText(modePanel.transform, "SingleLegBalanceDescription", "Hold one-leg posture and stay stable.", 17, TextAlignmentOptions.Center);
+        SetAnchored(balanceDesc, new Vector2(left + gapX * 1f, row1DescY), new Vector2(360, 30));
+        balanceDesc.GetComponent<TMP_Text>().color = new Color(0.83f, 0.83f, 0.86f);
 
         GameObject leanBalanceBtnGo = null;
         if (leanBalanceMgr != null)
         {
             leanBalanceBtnGo = CreateTMPButton(modePanel.transform, "LeanBalanceButton", "Lean Balance");
-            SetAnchored(leanBalanceBtnGo, new Vector2(0.5f, 0.40f), new Vector2(340, 55));
+            SetAnchored(leanBalanceBtnGo, new Vector2(left + gapX * 2f, row1BtnY), new Vector2(320, 58));
             leanBalanceBtnGo.GetComponent<Image>().color = new Color(0.15f, 0.6f, 0.35f, 1f);
+            var leanDesc = CreateTMPText(modePanel.transform, "LeanBalanceDescription", "Keep the tilt bar in the center zone.", 17, TextAlignmentOptions.Center);
+            SetAnchored(leanDesc, new Vector2(left + gapX * 2f, row1DescY), new Vector2(360, 30));
+            leanDesc.GetComponent<TMP_Text>().color = new Color(0.83f, 0.83f, 0.86f);
         }
 
         GameObject coinMineBtnGo = null;
         if (coinMineMgr != null)
         {
-            coinMineBtnGo = CreateTMPButton(modePanel.transform, "CoinMineButton", "Coin Mine");
-            SetAnchored(coinMineBtnGo, new Vector2(0.5f, 0.31f), new Vector2(340, 55));
+            coinMineBtnGo = CreateTMPButton(modePanel.transform, "CoinMineButton", "Coin Collector");
+            SetAnchored(coinMineBtnGo, new Vector2(left + gapX * 3f, row1BtnY), new Vector2(320, 58));
             coinMineBtnGo.GetComponent<Image>().color = new Color(0.9f, 0.7f, 0.15f, 1f);
+            var coinDesc = CreateTMPText(modePanel.transform, "CoinCollectorDescription", "Collect lane coins by leaning left/right.", 17, TextAlignmentOptions.Center);
+            SetAnchored(coinDesc, new Vector2(left + gapX * 3f, row1DescY), new Vector2(360, 30));
+            coinDesc.GetComponent<TMP_Text>().color = new Color(0.83f, 0.83f, 0.86f);
         }
 
         var testBtn = CreateTMPButton(modePanel.transform, "PoseTestButton", "Pose Test");
-        SetAnchored(testBtn, new Vector2(0.5f, 0.22f), new Vector2(340, 55));
+        SetAnchored(testBtn, new Vector2(left + gapX * 0f, row2BtnY), new Vector2(320, 58));
         testBtn.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.5f, 1f);
+        var testDesc = CreateTMPText(modePanel.transform, "PoseTestDescription", "Inspect live keypoint and gesture signals.", 17, TextAlignmentOptions.Center);
+        SetAnchored(testDesc, new Vector2(left + gapX * 0f, row2DescY), new Vector2(360, 30));
+        testDesc.GetComponent<TMP_Text>().color = new Color(0.83f, 0.83f, 0.86f);
 
         var ocrBtn = CreateTMPButton(modePanel.transform, "OcrButton", "OCR");
-        SetAnchored(ocrBtn, new Vector2(0.5f, 0.14f), new Vector2(340, 55));
+        SetAnchored(ocrBtn, new Vector2(left + gapX * 1f, row2BtnY), new Vector2(320, 58));
         ocrBtn.GetComponent<Image>().color = new Color(0.32f, 0.48f, 0.7f, 1f);
+        var ocrDesc = CreateTMPText(modePanel.transform, "OcrDescription", "Show OCR result from the pose pipeline.", 17, TextAlignmentOptions.Center);
+        SetAnchored(ocrDesc, new Vector2(left + gapX * 1f, row2DescY), new Vector2(360, 30));
+        ocrDesc.GetComponent<TMP_Text>().color = new Color(0.83f, 0.83f, 0.86f);
+
+        var clockBtn = CreateTMPButton(modePanel.transform, "ClockButton", "Clock ROI");
+        SetAnchored(clockBtn, new Vector2(left + gapX * 2f, row2BtnY), new Vector2(320, 58));
+        clockBtn.GetComponent<Image>().color = new Color(0.45f, 0.3f, 0.75f, 1f);
+        var clockDesc = CreateTMPText(modePanel.transform, "ClockDescription", "Display live ROI image instead of OCR text.", 17, TextAlignmentOptions.Center);
+        SetAnchored(clockDesc, new Vector2(left + gapX * 2f, row2DescY), new Vector2(360, 30));
+        clockDesc.GetComponent<TMP_Text>().color = new Color(0.83f, 0.83f, 0.86f);
 
         // ────────────────────────────────────────────
         // ── Dodge UI Panel ──
@@ -131,9 +200,9 @@ public static class ArchitectUIBuilder
         SetAnchored(goScore, new Vector2(0.5f, 0.56f), new Vector2(400, 50));
         var dodgeRestartBtn = CreateTMPButton(dodgeGameOver.transform, "DodgeRestartButton", "Restart");
         SetAnchored(dodgeRestartBtn, new Vector2(0.5f, 0.42f), new Vector2(220, 55));
-        var dodgeBackBtn = CreateTMPButton(dodgeGameOver.transform, "DodgeBackButton", "Back to Menu");
-        SetAnchored(dodgeBackBtn, new Vector2(0.5f, 0.30f), new Vector2(260, 55));
-        dodgeBackBtn.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.5f, 1f);
+        var dodgeExitBtn = CreateTMPButton(dodgeUI.transform, "DodgeExitButton", "Exit");
+        SetAnchoredCorner(dodgeExitBtn, Corner.TopRight, new Vector2(-20, -20), new Vector2(180, 46));
+        dodgeExitBtn.GetComponent<Image>().color = new Color(0.65f, 0.2f, 0.2f, 1f);
         dodgeGameOver.SetActive(false);
 
         dodgeUI.SetActive(false);
@@ -185,9 +254,9 @@ public static class ArchitectUIBuilder
         SetAnchored(balGoTime, new Vector2(0.5f, 0.51f), new Vector2(400, 40));
         var balRestartBtn = CreateTMPButton(balGameOver.transform, "BalRestartButton", "Restart");
         SetAnchored(balRestartBtn, new Vector2(0.5f, 0.38f), new Vector2(220, 55));
-        var balBackBtn = CreateTMPButton(balGameOver.transform, "BalBackButton", "Back to Menu");
-        SetAnchored(balBackBtn, new Vector2(0.5f, 0.26f), new Vector2(260, 55));
-        balBackBtn.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.5f, 1f);
+        var balanceExitBtn = CreateTMPButton(balanceUI.transform, "BalanceExitButton", "Exit");
+        SetAnchoredCorner(balanceExitBtn, Corner.TopRight, new Vector2(-20, -20), new Vector2(180, 46));
+        balanceExitBtn.GetComponent<Image>().color = new Color(0.65f, 0.2f, 0.2f, 1f);
         balGameOver.SetActive(false);
 
         balanceUI.SetActive(false);
@@ -236,9 +305,9 @@ public static class ArchitectUIBuilder
             SetAnchored(leanGoScore, new Vector2(0.5f, 0.56f), new Vector2(400, 50));
             var leanRestartBtn = CreateTMPButton(leanGameOver.transform, "LeanRestartButton", "Restart");
             SetAnchored(leanRestartBtn, new Vector2(0.5f, 0.42f), new Vector2(220, 55));
-            var leanBackBtn = CreateTMPButton(leanGameOver.transform, "LeanBackButton", "Back to Menu");
-            SetAnchored(leanBackBtn, new Vector2(0.5f, 0.30f), new Vector2(260, 55));
-            leanBackBtn.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.5f, 1f);
+            var leanExitBtn = CreateTMPButton(leanBalanceUI.transform, "LeanExitButton", "Exit");
+            SetAnchoredCorner(leanExitBtn, Corner.TopRight, new Vector2(-20, -20), new Vector2(180, 46));
+            leanExitBtn.GetComponent<Image>().color = new Color(0.65f, 0.2f, 0.2f, 1f);
             leanGameOver.SetActive(false);
 
             leanBalanceUI.SetActive(false);
@@ -252,7 +321,7 @@ public static class ArchitectUIBuilder
             leanBalanceMgr.gameOverScoreText = leanGoScore.GetComponent<TMP_Text>();
             WireButton(leanStartBtn, leanBalanceMgr, nameof(LeanBalanceGameManager.StartGame));
             WireButton(leanRestartBtn, leanBalanceMgr, nameof(LeanBalanceGameManager.StartGame));
-            WireButton(leanBackBtn, selector, nameof(ArchitectGameSelector.BackToMenu));
+            WireButton(leanExitBtn, selector, nameof(ArchitectGameSelector.ReturnToStartMenuScene));
             EditorUtility.SetDirty(leanBalanceMgr);
         }
 
@@ -267,8 +336,11 @@ public static class ArchitectUIBuilder
             coinMineUI.GetComponent<Image>().color = new Color(0, 0, 0, 0);
             coinMineUI.GetComponent<Image>().raycastTarget = false;
 
-            var coinScore = CreateTMPText(coinMineUI.transform, "CoinMineScoreText", "Coins: 0", 36, TextAlignmentOptions.TopLeft);
-            SetAnchoredCorner(coinScore, Corner.TopLeft, new Vector2(20, -15), new Vector2(220, 50));
+            var coinScore = CreateTMPText(coinMineUI.transform, "CoinMineScoreText", "Coins: 0", 36, TextAlignmentOptions.TopRight);
+            SetAnchoredCorner(coinScore, Corner.TopRight, new Vector2(-220, -15), new Vector2(220, 50));
+
+            var coinTimer = CreateTMPText(coinMineUI.transform, "CoinMineTimerText", "Time: 30s", 36, TextAlignmentOptions.TopLeft);
+            SetAnchoredCorner(coinTimer, Corner.TopLeft, new Vector2(20, -15), new Vector2(280, 50));
 
             var coinLaneHint = CreateTMPText(coinMineUI.transform, "CoinMineLaneHintText", "← LEAN LEFT  CENTER  LEAN RIGHT →", 28, TextAlignmentOptions.Center);
             SetAnchored(coinLaneHint, new Vector2(0.5f, 0.92f), new Vector2(700, 45));
@@ -276,10 +348,6 @@ public static class ArchitectUIBuilder
 
             var coinYouAre = CreateTMPText(coinMineUI.transform, "CoinMineYouAreText", "You: CENTER", 26, TextAlignmentOptions.Center);
             SetAnchored(coinYouAre, new Vector2(0.5f, 0.85f), new Vector2(280, 40));
-
-            var coinEndRunBtn = CreateTMPButton(coinMineUI.transform, "CoinMineEndRunButton", "End Run");
-            SetAnchoredCorner(coinEndRunBtn, Corner.TopRight, new Vector2(-20, -15), new Vector2(160, 45));
-            coinEndRunBtn.GetComponent<Image>().color = new Color(0.5f, 0.4f, 0.2f, 1f);
 
             var coinStartPanel = CreatePanel(coinMineUI.transform, "CoinMineStartPrompt");
             StretchFill(coinStartPanel);
@@ -298,22 +366,24 @@ public static class ArchitectUIBuilder
             SetAnchored(coinGoLabel, new Vector2(0.5f, 0.68f), new Vector2(400, 60));
             var coinGoScore = CreateTMPText(coinGameOver.transform, "CoinGoScore", "Coins: 0", 32, TextAlignmentOptions.Center);
             SetAnchored(coinGoScore, new Vector2(0.5f, 0.56f), new Vector2(400, 50));
-            var coinBackBtn = CreateTMPButton(coinGameOver.transform, "CoinMineBackButton", "Back to Menu");
-            SetAnchored(coinBackBtn, new Vector2(0.5f, 0.40f), new Vector2(260, 55));
-            coinBackBtn.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.5f, 1f);
+            var coinExitBtn = CreateTMPButton(coinMineUI.transform, "CoinExitButton", "Exit");
+            SetAnchoredCorner(coinExitBtn, Corner.TopRight, new Vector2(-20, -20), new Vector2(180, 46));
+            coinExitBtn.GetComponent<Image>().color = new Color(0.65f, 0.2f, 0.2f, 1f);
             coinGameOver.SetActive(false);
 
             coinMineUI.SetActive(false);
 
             coinMineMgr.scoreText = coinScore.GetComponent<TMP_Text>();
+            coinMineMgr.timerText = coinTimer.GetComponent<TMP_Text>();
             coinMineMgr.laneHintText = coinLaneHint.GetComponent<TMP_Text>();
             coinMineMgr.youAreHereText = coinYouAre.GetComponent<TMP_Text>();
             coinMineMgr.startPromptPanel = coinStartPanel;
             coinMineMgr.gameOverPanel = coinGameOver;
             coinMineMgr.gameOverScoreText = coinGoScore.GetComponent<TMP_Text>();
+            coinMineMgr.bodyTiltInput = Object.FindFirstObjectByType<BodyTiltInput>(FindObjectsInactive.Include);
+            coinMineMgr.gestureDetector = Object.FindFirstObjectByType<PoseGestureDetector>(FindObjectsInactive.Include);
             WireButton(coinStartBtn, coinMineMgr, nameof(CoinMineGameManager.StartGame));
-            WireButton(coinEndRunBtn, coinMineMgr, nameof(CoinMineGameManager.EndGame));
-            WireButton(coinBackBtn, selector, nameof(ArchitectGameSelector.BackToMenu));
+            WireButton(coinExitBtn, selector, nameof(ArchitectGameSelector.ReturnToStartMenuScene));
             EditorUtility.SetDirty(coinMineMgr);
         }
 
@@ -322,7 +392,7 @@ public static class ArchitectUIBuilder
         // ────────────────────────────────────────────
         var testUI = CreatePanel(canvasGo.transform, "PoseTestUIPanel");
         StretchFill(testUI);
-        testUI.GetComponent<Image>().color = new Color(0.05f, 0.05f, 0.1f, 0.6f);
+        testUI.GetComponent<Image>().color = new Color(0, 0, 0, 0);
         testUI.GetComponent<Image>().raycastTarget = false;
 
         var testTitle = CreateTMPText(testUI.transform, "TestTitle", "POSE TEST", 42, TextAlignmentOptions.TopLeft);
@@ -345,9 +415,9 @@ public static class ArchitectUIBuilder
         SetAnchoredCorner(kpInfo, Corner.BottomLeft, new Vector2(30, 60), new Vector2(600, 160));
         kpInfo.GetComponent<TMP_Text>().color = new Color(0.8f, 0.8f, 0.8f);
 
-        var testBackBtn = CreateTMPButton(testUI.transform, "TestBackButton", "Back to Menu");
-        SetAnchoredCorner(testBackBtn, Corner.TopRight, new Vector2(-20, -20), new Vector2(220, 50));
-        testBackBtn.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.5f, 1f);
+        var testExitBtn = CreateTMPButton(testUI.transform, "TestExitButton", "Exit");
+        SetAnchoredCorner(testExitBtn, Corner.TopRight, new Vector2(-20, -20), new Vector2(180, 46));
+        testExitBtn.GetComponent<Image>().color = new Color(0.65f, 0.2f, 0.2f, 1f);
 
         // ── Frame Sync Indicator (for MTP latency measurement) ──
         var syncGo = new GameObject("FrameSyncIndicator", typeof(RectTransform));
@@ -373,7 +443,7 @@ public static class ArchitectUIBuilder
         // ────────────────────────────────────────────
         var ocrUI = CreatePanel(canvasGo.transform, "OcrUIPanel");
         StretchFill(ocrUI);
-        ocrUI.GetComponent<Image>().color = new Color(0.05f, 0.05f, 0.1f, 0.6f);
+        ocrUI.GetComponent<Image>().color = new Color(0, 0, 0, 0);
         ocrUI.GetComponent<Image>().raycastTarget = false;
 
         var ocrTitle = CreateTMPText(ocrUI.transform, "OcrTitle", "OCR", 42, TextAlignmentOptions.TopLeft);
@@ -389,11 +459,54 @@ public static class ArchitectUIBuilder
         ocrValueTmp.enableWordWrapping = false;
         ocrValueTmp.overflowMode = TextOverflowModes.Overflow;
 
-        var ocrBackBtn = CreateTMPButton(ocrUI.transform, "OcrBackButton", "Back to Menu");
-        SetAnchoredCorner(ocrBackBtn, Corner.TopRight, new Vector2(-20, -20), new Vector2(220, 50));
-        ocrBackBtn.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.5f, 1f);
+        var ocrExitBtn = CreateTMPButton(ocrUI.transform, "OcrExitButton", "Exit");
+        SetAnchoredCorner(ocrExitBtn, Corner.TopRight, new Vector2(-20, -20), new Vector2(180, 46));
+        ocrExitBtn.GetComponent<Image>().color = new Color(0.65f, 0.2f, 0.2f, 1f);
 
         ocrUI.SetActive(false);
+
+        // ────────────────────────────────────────────
+        // ── Clock ROI UI Panel ──
+        // ────────────────────────────────────────────
+        var clockUI = CreatePanel(canvasGo.transform, "ClockUIPanel");
+        StretchFill(clockUI);
+        clockUI.GetComponent<Image>().color = new Color(0, 0, 0, 0);
+        clockUI.GetComponent<Image>().raycastTarget = false;
+
+        var clockTitle = CreateTMPText(clockUI.transform, "ClockTitle", "CLOCK ROI", 42, TextAlignmentOptions.TopLeft);
+        SetAnchoredCorner(clockTitle, Corner.TopLeft, new Vector2(30, -20), new Vector2(400, 55));
+        var clockStatus = CreateTMPText(clockUI.transform, "ClockStatus", "Waiting for ROI UDP...", 26, TextAlignmentOptions.TopLeft);
+        SetAnchoredCorner(clockStatus, Corner.TopLeft, new Vector2(30, -78), new Vector2(700, 42));
+        var clockInfo = CreateTMPText(clockUI.transform, "ClockInfo", "Resolution: --", 22, TextAlignmentOptions.TopLeft);
+        SetAnchoredCorner(clockInfo, Corner.TopLeft, new Vector2(30, -122), new Vector2(700, 38));
+        var clockInfoTmp = clockInfo.GetComponent<TMP_Text>();
+        clockInfoTmp.color = new Color(0.8f, 0.8f, 0.85f, 1f);
+
+        // Unity only allows one Graphic component per GameObject, so put the dark
+        // background (Image) and the live preview (RawImage) on two sibling GameObjects.
+        var clockPreviewGo = new GameObject("ClockRoiPreview", typeof(RectTransform));
+        clockPreviewGo.transform.SetParent(clockUI.transform, false);
+        SetAnchored(clockPreviewGo, new Vector2(0.5f, 0.47f), new Vector2(1200, 680));
+
+        var clockBgGo = new GameObject("Background", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        clockBgGo.transform.SetParent(clockPreviewGo.transform, false);
+        StretchFill(clockBgGo);
+        var clockBg = clockBgGo.GetComponent<Image>();
+        clockBg.color = new Color(0.12f, 0.12f, 0.15f, 1f);
+        clockBg.raycastTarget = false;
+
+        var clockRawGo = new GameObject("RoiImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
+        clockRawGo.transform.SetParent(clockPreviewGo.transform, false);
+        StretchFill(clockRawGo);
+        var clockRaw = clockRawGo.GetComponent<RawImage>();
+        clockRaw.color = Color.white;
+        clockRaw.raycastTarget = false;
+
+        var clockExitBtn = CreateTMPButton(clockUI.transform, "ClockExitButton", "Exit");
+        SetAnchoredCorner(clockExitBtn, Corner.TopRight, new Vector2(-20, -20), new Vector2(180, 46));
+        clockExitBtn.GetComponent<Image>().color = new Color(0.65f, 0.2f, 0.2f, 1f);
+
+        clockUI.SetActive(false);
 
         // ────────────────────────────────────────────
         // ── Wire everything ──
@@ -407,18 +520,20 @@ public static class ArchitectUIBuilder
         selector.coinMineButton = coinMineBtnGo != null ? coinMineBtnGo.GetComponent<Button>() : null;
         selector.poseTestButton = testBtn.GetComponent<Button>();
         selector.ocrButton = ocrBtn.GetComponent<Button>();
+        selector.clockButton = clockBtn.GetComponent<Button>();
         selector.dodgeUIPanel = dodgeUI;
         selector.balanceUIPanel = balanceUI;
         selector.leanBalanceUIPanel = leanBalanceUI;
         selector.coinMineUIPanel = coinMineUI;
         selector.poseTestUIPanel = testUI;
         selector.ocrUIPanel = ocrUI;
+        selector.clockUIPanel = clockUI;
 
-        // Back-to-menu buttons
-        WireButton(dodgeBackBtn, selector, nameof(ArchitectGameSelector.BackToMenu));
-        WireButton(balBackBtn, selector, nameof(ArchitectGameSelector.BackToMenu));
-        WireButton(testBackBtn, selector, nameof(ArchitectGameSelector.BackToMenu));
-        WireButton(ocrBackBtn, selector, nameof(ArchitectGameSelector.BackToMenu));
+        WireButton(dodgeExitBtn, selector, nameof(ArchitectGameSelector.ReturnToStartMenuScene));
+        WireButton(balanceExitBtn, selector, nameof(ArchitectGameSelector.ReturnToStartMenuScene));
+        WireButton(testExitBtn, selector, nameof(ArchitectGameSelector.ReturnToStartMenuScene));
+        WireButton(ocrExitBtn, selector, nameof(ArchitectGameSelector.ReturnToStartMenuScene));
+        WireButton(clockExitBtn, selector, nameof(ArchitectGameSelector.ReturnToStartMenuScene));
 
         // Dodge
         dodgeMgr.scoreText = dodgeScore.GetComponent<TMP_Text>();
@@ -464,10 +579,36 @@ public static class ArchitectUIBuilder
             EditorUtility.SetDirty(ocrMode);
         }
 
+        if (clockMode != null)
+        {
+            clockMode.roiPreviewImage = clockRaw;
+            clockMode.statusLabel = clockStatus.GetComponent<TMP_Text>();
+            clockMode.infoLabel = clockInfoTmp;
+            EditorUtility.SetDirty(clockMode);
+        }
+
         EditorUtility.SetDirty(selector);
         Undo.RegisterCreatedObjectUndo(canvasGo, "Create Game UI");
+
+        // Final safety: hide every game panel and make sure the menu is the last sibling
+        // so it renders on top no matter what was imported from a previously-saved scene.
+        if (dodgeUI != null) dodgeUI.SetActive(false);
+        if (balanceUI != null) balanceUI.SetActive(false);
+        if (leanBalanceUI != null) leanBalanceUI.SetActive(false);
+        if (coinMineUI != null) coinMineUI.SetActive(false);
+        if (testUI != null) testUI.SetActive(false);
+        if (ocrUI != null) ocrUI.SetActive(false);
+        if (clockUI != null) clockUI.SetActive(false);
+        modePanel.transform.SetAsLastSibling();
+        modePanel.SetActive(true);
+
+        // Persist the scene so Play mode cannot pick up a stale layout from an older save.
+        var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(activeScene);
+        UnityEditor.SceneManagement.EditorSceneManager.SaveScene(activeScene);
+
         Selection.activeGameObject = canvasGo;
-        Debug.Log("[Architect] Game UI created and wired. Press Play to test.");
+        Debug.Log("[Architect] Game UI rebuilt, all game panels hidden, scene saved. Press Play.");
     }
 
     // ── Helpers ──
