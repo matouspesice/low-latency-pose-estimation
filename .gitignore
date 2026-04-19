@@ -1,3 +1,6 @@
+# Local latency dumps (opt-in via pose.json / --log-latency + --latency-csv)
+app/latency_live.csv
+
 # Python virtual environments
 .venv/
 .venv310/

@@ -323,7 +323,10 @@ def parse_args():
         type=str,
         default=defaults["latency_csv"],
         metavar="PATH",
-        help="When --log-latency is set, write per-frame latency (loop_ms, infer_ms) to this CSV file.",
+        help=(
+            "When --log-latency is set AND this path is non-empty, write per-frame latency "
+            "(loop_ms, infer_ms) to that CSV. Default in pose.json is empty — no file is written."
+        ),
     )
     p.add_argument(
         "--ocr-enable",

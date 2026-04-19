@@ -35,7 +35,8 @@ public class CoinMineGameManager : MonoBehaviour
     public float gameDurationSeconds = 30f;
 
     [Header("Coin path")]
-    public float firstCoinOffsetZ = 25f;
+    [Tooltip("Z of first coin row ahead of the ball. ~2 s warm-up at forwardSpeed≈16 → offset ≈ 32–36.")]
+    public float firstCoinOffsetZ = 35f;
     public float gapBetweenCoins = 4f;
     public int totalCoinsToSpawn = 120;
     public float leftLaneX = -3f;
@@ -43,6 +44,10 @@ public class CoinMineGameManager : MonoBehaviour
     public float rightLaneX = 3f;
     public float coinHeight = 1f;
     public float laneLength = 600f;
+
+    [Header("Performance (optional)")]
+    [Tooltip("If > 0, sets Application.targetFrameRate for the active coin round (snappier input on high-Hz displays). Restored when the round ends or this object tears down.")]
+    public int targetFrameRateWhilePlaying = 0;
 
     [Header("UI (wired by ArchitectUIBuilder)")]
     public TMP_Text scoreText;
@@ -64,6 +69,8 @@ public class CoinMineGameManager : MonoBehaviour
     int _score;
     bool _playing;
     float _smoothedX;
+    int _savedApplicationTargetFrameRate = -1;
+    bool _overrodeApplicationTargetFrameRate;
 
     public int Score { get { return _score; } }
     public bool IsPlaying { get { return _playing; } }
@@ -122,6 +129,7 @@ public class CoinMineGameManager : MonoBehaviour
         _score = 0;
         _smoothedX = 0f;
         _playing = true;
+        ApplyTargetFrameRateForRound();
         UpdateScoreText();
         UpdateTimerText(gameDurationSeconds);
         if (laneHintText != null) laneHintText.text = "Lean to steer the ball!";
@@ -266,6 +274,7 @@ public class CoinMineGameManager : MonoBehaviour
 
     void TearDownWorld()
     {
+        RestoreTargetFrameRateAfterRound();
         RestoreMainCamera();
         if (_world != null)
         {
@@ -275,6 +284,24 @@ public class CoinMineGameManager : MonoBehaviour
         }
         _ballRb = null;
         _gameCamera = null;
+    }
+
+    void ApplyTargetFrameRateForRound()
+    {
+        if (targetFrameRateWhilePlaying <= 0) return;
+        if (!_overrodeApplicationTargetFrameRate)
+        {
+            _savedApplicationTargetFrameRate = Application.targetFrameRate;
+            _overrodeApplicationTargetFrameRate = true;
+        }
+        Application.targetFrameRate = targetFrameRateWhilePlaying;
+    }
+
+    void RestoreTargetFrameRateAfterRound()
+    {
+        if (!_overrodeApplicationTargetFrameRate) return;
+        Application.targetFrameRate = _savedApplicationTargetFrameRate;
+        _overrodeApplicationTargetFrameRate = false;
     }
 
     /// <summary>

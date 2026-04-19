@@ -7,8 +7,7 @@ This repository contains the implementation workspace for the low-latency body-p
 This repo is for implementation and collaboration only:
 
 - Python runtime and OCR/pose tools: `app/`
-- Main Unity integration project: `architect/`
-- Secondary Unity project experiments: `Coin-Collector-main/`
+- Main Unity integration project: `architect/` (includes the **Coin Collector** body-tilt mini-game; the old standalone CollectCoins tree was removed to avoid duplication)
 
 ## Prerequisites
 
@@ -55,6 +54,19 @@ python pose.py
 ```
 
 Adjust runtime options/config in `app/pose.json` as needed.
+
+**Per-frame latency CSV:** disabled by default (`log_latency: false`, empty `latency_csv`). To record a run, set `"log_latency": true` and e.g. `"latency_csv": "latency_live.csv"`, or use `--log-latency --latency-csv path.csv` on the command line.
+
+## Coin Collector (Architect) — tuning from the original prototype
+
+The former standalone CollectCoins project documented **low-latency body tilt → ball** behaviour. The same ideas apply to `CoinMineGameManager` in `architect/`:
+
+- **BodyTiltInput → Output Smoothing:** keep at **0** on `PoseBridge` for the snappiest mapping (smoothing adds lag).
+- **VSync / frame rate:** disable VSync in **Quality** settings if you want uncapped FPS; optionally set **Coin Mine → Target Frame Rate While Playing** on `CoinMineGameManager` (e.g. 120) so `Application.targetFrameRate` is raised only during a round.
+- **Fixed Timestep:** lower **Edit → Project Settings → Time → Fixed Timestep** (e.g. 0.0083 ≈ 120 Hz) for slightly snappier physics at CPU cost.
+- **Warm-up lane:** the first coin row is placed farther ahead (~2 s of travel at default forward speed) so you can settle before collecting.
+
+More detail: `docs/COIN_COLLECTOR_LATENCY.md`.
 
 ## Live clock ROI image stream (Unity)
 
