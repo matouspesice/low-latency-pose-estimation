@@ -86,8 +86,21 @@ def _load_config(path):
         "ocr_rapid_use_text_det",
         "clock_stream_enable",
         "clock_stream_separate_udp",
+        "proc_enable",
+        "proc_hold_low_conf",
     )
-    float_keys = ("smooth_pose", "ocr_max_fps", "ocr_print_interval", "camera_fps", "camera_exposure", "clock_stream_max_fps")
+    float_keys = (
+        "smooth_pose",
+        "ocr_max_fps",
+        "ocr_print_interval",
+        "camera_fps",
+        "camera_exposure",
+        "clock_stream_max_fps",
+        "proc_min_confidence",
+        "proc_max_jump",
+        "proc_alpha",
+        "proc_min_alpha",
+    )
     int_keys = int_keys + ("clock_stream_jpeg_quality", "clock_downscale")
     for k in int_keys:
         if k in raw and isinstance(raw[k], (int, float)):
@@ -161,6 +174,12 @@ def parse_args():
         "clock_stream_jpeg_quality": 55,
         "clock_downscale": 192,
         "clock_stream_separate_udp": True,
+        "proc_enable": True,
+        "proc_min_confidence": 0.25,
+        "proc_max_jump": 0.12,
+        "proc_hold_low_conf": True,
+        "proc_alpha": 0.55,
+        "proc_min_alpha": 0.25,
     }
     for k, v in config.items():
         if k in defaults:
@@ -458,6 +477,58 @@ def parse_args():
         dest="clock_stream_separate_udp",
         action="store_false",
         help="Disable the separate ROI datagram and bundle it in the pose packet (legacy behavior).",
+    )
+    p.add_argument(
+        "--proc-enable",
+        action="store_true",
+        default=defaults.get("proc_enable", True),
+        help="Enable latency-safe pose post-processing (confidence gating + outlier clamp + adaptive smoothing).",
+    )
+    p.add_argument(
+        "--proc-disable",
+        dest="proc_enable",
+        action="store_false",
+        help="Disable pose post-processing and send raw keypoints from inference.",
+    )
+    p.add_argument(
+        "--proc-min-confidence",
+        type=float,
+        default=defaults.get("proc_min_confidence", 0.25),
+        metavar="C",
+        help="Minimum keypoint confidence to accept new joint positions (default 0.25).",
+    )
+    p.add_argument(
+        "--proc-max-jump",
+        type=float,
+        default=defaults.get("proc_max_jump", 0.12),
+        metavar="D",
+        help="Maximum per-frame joint jump in normalized coords before clamping (default 0.12).",
+    )
+    p.add_argument(
+        "--proc-hold-low-conf",
+        action="store_true",
+        default=defaults.get("proc_hold_low_conf", True),
+        help="When confidence is too low, hold previous valid joint position instead of forwarding noisy sample.",
+    )
+    p.add_argument(
+        "--no-proc-hold-low-conf",
+        dest="proc_hold_low_conf",
+        action="store_false",
+        help="Do not hold previous joint on low confidence frames.",
+    )
+    p.add_argument(
+        "--proc-alpha",
+        type=float,
+        default=defaults.get("proc_alpha", 0.55),
+        metavar="A",
+        help="Adaptive smoothing upper alpha (higher trusts current sample more).",
+    )
+    p.add_argument(
+        "--proc-min-alpha",
+        type=float,
+        default=defaults.get("proc_min_alpha", 0.25),
+        metavar="A",
+        help="Adaptive smoothing lower alpha for low-confidence/noisy frames.",
     )
     return p.parse_args()
 
@@ -857,6 +928,83 @@ def _blend_pose(pose_data: dict, prev: dict | None, alpha: float) -> dict:
         else:
             out["keypoints"].append(dict(k))
     return out
+
+
+def _process_pose_data(
+    pose_data: dict,
+    state: dict,
+    min_confidence: float,
+    max_jump: float,
+    hold_low_conf: bool,
+    alpha: float,
+    min_alpha: float,
+) -> dict:
+    """Latency-safe post-processing on normalized COCO keypoints.
+
+    Steps:
+    - confidence gate (reject weak samples),
+    - outlier clamp (limit per-frame jumps),
+    - adaptive smoothing (confidence/motion weighted EMA).
+    """
+    if pose_data is None:
+        return pose_data
+    kpts = pose_data.get("keypoints")
+    if not isinstance(kpts, list) or not kpts:
+        return pose_data
+
+    prev = state.get("prev_keypoints")
+    use_prev = isinstance(prev, list) and len(prev) == len(kpts)
+
+    min_conf = max(0.0, min(1.0, float(min_confidence)))
+    jump_lim = max(0.0, float(max_jump))
+    a_hi = max(0.0, min(1.0, float(alpha)))
+    a_lo = max(0.0, min(a_hi, float(min_alpha)))
+
+    out = []
+    for i, k in enumerate(kpts):
+        x = float(k.get("x", 0.0))
+        y = float(k.get("y", 0.0))
+        s = float(k.get("s", 0.0))
+        pk = prev[i] if use_prev else None
+
+        in_bounds = (0.0 <= x <= 1.0) and (0.0 <= y <= 1.0)
+        is_confident = s >= min_conf and in_bounds
+
+        if not is_confident:
+            if hold_low_conf and pk is not None:
+                out.append({"x": float(pk["x"]), "y": float(pk["y"]), "s": s})
+            else:
+                out.append({"x": x, "y": y, "s": s})
+            continue
+
+        if pk is not None:
+            px = float(pk["x"])
+            py = float(pk["y"])
+            dx = x - px
+            dy = y - py
+            dist = (dx * dx + dy * dy) ** 0.5
+
+            # Outlier clamp: keep large spikes from destabilizing downstream game logic.
+            if jump_lim > 0.0 and dist > jump_lim and dist > 1e-6:
+                scale = jump_lim / dist
+                x = px + dx * scale
+                y = py + dy * scale
+                dx = x - px
+                dy = y - py
+                dist = jump_lim
+
+            # Higher confidence and larger intentional motion both increase trust in current sample.
+            conf_gain = (s - min_conf) / max(1e-6, 1.0 - min_conf)
+            conf_gain = max(0.0, min(1.0, conf_gain))
+            motion_gain = max(0.0, min(1.0, dist / max(1e-6, jump_lim))) if jump_lim > 0 else 1.0
+            blend = max(a_lo, min(a_hi, a_lo + (a_hi - a_lo) * max(conf_gain, motion_gain)))
+            x = blend * x + (1.0 - blend) * px
+            y = blend * y + (1.0 - blend) * py
+
+        out.append({"x": x, "y": y, "s": s})
+
+    state["prev_keypoints"] = [{"x": p["x"], "y": p["y"], "s": p["s"]} for p in out]
+    return {"keypoints": out, "width": pose_data.get("width", 0), "height": pose_data.get("height", 0)}
 
 
 def send_pose_udp(
@@ -1351,6 +1499,16 @@ def main():
             print(f"Warning: could not create UDP socket: {e}")
     if getattr(args, "smooth_pose", 0) > 0:
         print(f"Pose smoothing: alpha={args.smooth_pose} (0=off for lowest latency).")
+    if getattr(args, "proc_enable", True):
+        print(
+            "Pose processing: ON "
+            f"(min_conf={float(args.proc_min_confidence):.2f}, "
+            f"max_jump={float(args.proc_max_jump):.3f}, "
+            f"alpha=[{float(args.proc_min_alpha):.2f}..{float(args.proc_alpha):.2f}], "
+            f"hold_low_conf={'yes' if args.proc_hold_low_conf else 'no'})"
+        )
+    else:
+        print("Pose processing: OFF (raw keypoints).")
 
     if getattr(args, "log_latency", False):
         print("Latency logging: ON (capture-to-pose ms). Summary at exit.")
@@ -1421,6 +1579,7 @@ def main():
     clock_stream_downscale = int(getattr(args, "clock_downscale", 192) or 0)
     clock_stream_separate_udp = bool(getattr(args, "clock_stream_separate_udp", True))
     clock_stream_state = {"last_run_t": 0.0, "last_payload": ""}
+    process_state = {"prev_keypoints": None}
     ocr_interval = max(1, int(args.ocr_interval))
     ocr_max_fps = max(0.1, float(args.ocr_max_fps))
     ocr_min_dt = 1.0 / ocr_max_fps
@@ -1520,11 +1679,22 @@ def main():
                 if getattr(args, "log_latency", False):
                     loop_ms = (t_after - t_capture) * 1000
                     latency_samples.append((loop_ms, infer_ms))
+                pose_payload = pose_data
+                if pose_payload is not None and getattr(args, "proc_enable", True):
+                    pose_payload = _process_pose_data(
+                        pose_payload,
+                        process_state,
+                        getattr(args, "proc_min_confidence", 0.25),
+                        getattr(args, "proc_max_jump", 0.12),
+                        bool(getattr(args, "proc_hold_low_conf", True)),
+                        getattr(args, "proc_alpha", 0.55),
+                        getattr(args, "proc_min_alpha", 0.25),
+                    )
                 send_pose_udp(
                     udp_sock,
                     args.udp_host,
                     args.udp_port,
-                    pose_data,
+                    pose_payload,
                     getattr(args, "smooth_pose", 0),
                     udp_prev_pose,
                     ocr_state["last"] if args.ocr_enable else None,
@@ -1720,11 +1890,22 @@ def main():
             if getattr(args, "log_latency", False):
                 loop_ms = (t_after - t_capture) * 1000
                 latency_samples.append((loop_ms, infer_ms))
+            pose_payload = pose_data
+            if pose_payload is not None and getattr(args, "proc_enable", True):
+                pose_payload = _process_pose_data(
+                    pose_payload,
+                    process_state,
+                    getattr(args, "proc_min_confidence", 0.25),
+                    getattr(args, "proc_max_jump", 0.12),
+                    bool(getattr(args, "proc_hold_low_conf", True)),
+                    getattr(args, "proc_alpha", 0.55),
+                    getattr(args, "proc_min_alpha", 0.25),
+                )
             send_pose_udp(
                 udp_sock,
                 args.udp_host,
                 args.udp_port,
-                pose_data,
+                pose_payload,
                 getattr(args, "smooth_pose", 0),
                 udp_prev_pose,
                 ocr_state["last"] if args.ocr_enable else None,

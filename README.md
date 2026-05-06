@@ -68,6 +68,19 @@ The former standalone CollectCoins project documented **low-latency body tilt â†
 
 More detail: `docs/COIN_COLLECTOR_LATENCY.md`.
 
+## Pose processing optimization (keypoint conditioning)
+
+The runtime now includes an optional, latency-safe processing stage before sending keypoints to Unity:
+
+- confidence gating for weak joints,
+- outlier jump clamping,
+- adaptive smoothing for jitter reduction.
+
+Default is enabled in `app/pose.json` (`proc_enable: true`).  
+Use `--proc-disable` for raw baseline runs.
+
+Detailed description and benchmark numbers: `docs/POSE_PROCESSING_OPTIMIZATION.md`.
+
 ## Live clock ROI image stream (Unity)
 
 The **Architect** Unity project can show a **low-latency camera crop** (where a wall clock sits) while pose keypoints still drive games and the avatar.

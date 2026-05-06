@@ -48,6 +48,37 @@ See **`PLAN.md`** for the full plan (phases, camera switching, no Unity for now)
 
 ---
 
+## FLIR / Spinnaker setup (Windows)
+
+Use this only when running `--camera-mode flir`.
+
+1. **Install Spinnaker SDK + SpinView**
+   - Download and install Spinnaker from FLIR:
+     https://www.flir.com/support-center/iis/machine-vision/downloads/spinnaker-sdk-flycapture-and-firmware-download/
+   - Open **SpinView** and confirm the FLIR camera is visible.
+
+2. **Use Python 3.10 environment for PySpin**
+   - The bundled wheel in this repository is `cp310` (Python 3.10).
+   - From `app/`, install PySpin into `.venv310`:
+   ```powershell
+   .\.venv310\Scripts\python.exe -m pip install "..\spinnaker_python-4.3.0.189-cp310-cp310-win_amd64\PySpin-4.3.0.189-cp310-cp310-win_amd64.whl"
+   ```
+
+3. **Verify PySpin**
+   ```powershell
+   .\.venv310\Scripts\python.exe -c "import PySpin; print('PySpin OK')"
+   ```
+
+4. **Run pose with FLIR**
+   ```powershell
+   .\.venv310\Scripts\python.exe pose.py --camera-mode flir --camera 0
+   ```
+   If needed, try `--camera 1`.
+
+**Important:** Having SpinView working does not guarantee PySpin is installed in the Python interpreter used to run `pose.py`. Install/verify PySpin in the exact env used for runtime.
+
+---
+
 ## Low latency / optimization
 
 The app is tuned for minimal latency (e.g. for a high-framerate camera or Unity later). These options help:
@@ -60,6 +91,8 @@ The app is tuned for minimal latency (e.g. for a high-framerate camera or Unity 
 | **`--width W --height H`** | Capture at lower resolution (e.g. `640`×`480`) so less data is processed. Use `0` for camera default. |
 | **`--threaded`** | Run capture + inference in a background thread; main thread only displays. Reduces lag from `imshow`/window. |
 | **`--no-viz`** | Skip skeleton overlay (raw frame + stats). Slightly faster; useful for keypoints-only (e.g. piping to Unity). |
+| **`--proc-enable`** (default) | Enable post-processing of keypoints before UDP send (confidence gate + outlier clamp + adaptive smoothing). |
+| **`--proc-disable`** | Send raw keypoints only (use for baseline A/B latency checks). |
 
 **Camera / pipeline behaviour (no flags needed):**
 
@@ -75,6 +108,8 @@ python pose.py --device cuda --mode lightweight --det-frequency 10 --width 640 -
 For keypoints-only (e.g. sending to Unity), add **`--no-viz`**.
 
 **Send pose to Unity (Architect game):** use **`--udp-port 5555`** (or another port). The app will broadcast each pose as JSON to `127.0.0.1:5555`. In Unity, set **PoseReceiver** to the same port. Example: `python pose.py --udp-port 5555 --no-viz`
+
+**Pose processing details:** see `../docs/POSE_PROCESSING_OPTIMIZATION.md` for algorithm steps, parameters, and measured webcam A/B latency impact.
 
 ---
 
