@@ -61,8 +61,9 @@ Use this only when running `--camera-mode flir`.
    - The bundled wheel in this repository is `cp310` (Python 3.10).
    - From `app/`, install PySpin into `.venv310`:
    ```powershell
-   .\.venv310\Scripts\python.exe -m pip install "..\spinnaker_python-4.3.0.189-cp310-cp310-win_amd64\PySpin-4.3.0.189-cp310-cp310-win_amd64.whl"
+   .\.venv310\Scripts\python.exe -m pip install "..\spinnaker_python-4.3.0.189-cp310-cp310-win_amd64\spinnaker_python-4.3.0.189-cp310-cp310-win_amd64.whl"
    ```
+   - If your SDK package has a different wheel filename/version, install that exact `.whl` instead.
 
 3. **Verify PySpin**
    ```powershell

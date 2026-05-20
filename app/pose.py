@@ -85,7 +85,6 @@ def _load_config(path):
         "log_latency",
         "ocr_rapid_use_text_det",
         "clock_stream_enable",
-        "clock_stream_separate_udp",
         "proc_enable",
         "proc_hold_low_conf",
     )
@@ -173,7 +172,6 @@ def parse_args():
         "clock_stream_max_fps": 30.0,
         "clock_stream_jpeg_quality": 55,
         "clock_downscale": 192,
-        "clock_stream_separate_udp": True,
         "proc_enable": True,
         "proc_min_confidence": 0.25,
         "proc_max_jump": 0.12,
@@ -428,7 +426,10 @@ def parse_args():
         "--clock-stream-enable",
         action="store_true",
         default=defaults.get("clock_stream_enable", False),
-        help="Send live clock ROI image in UDP payload as roiImageBase64.",
+        help=(
+            "JPEG-encode the clock ROI after pose inference and include it in the same pose "
+            "UDP JSON packet as roiImageBase64 (for full-pipeline latency measurement)."
+        ),
     )
     p.add_argument(
         "--clock-roi",
@@ -461,22 +462,6 @@ def parse_args():
             "encoding. Drops packet size + decode cost dramatically and removes noise that "
             "kills JPEG compression. 0 = no downscale. Default 192."
         ),
-    )
-    p.add_argument(
-        "--clock-stream-separate-udp",
-        action="store_true",
-        default=defaults.get("clock_stream_separate_udp", True),
-        help=(
-            "Send the clock ROI as its own UDP datagram immediately after capture instead of "
-            "bundling it with the pose packet. Keeps ROI latency independent of pose inference. "
-            "Default: on."
-        ),
-    )
-    p.add_argument(
-        "--no-clock-stream-separate-udp",
-        dest="clock_stream_separate_udp",
-        action="store_false",
-        help="Disable the separate ROI datagram and bundle it in the pose packet (legacy behavior).",
     )
     p.add_argument(
         "--proc-enable",
@@ -1038,22 +1023,22 @@ def send_pose_udp(
         pass  # avoid spamming console on disconnect
 
 
-def send_clock_roi_udp(sock: socket.socket, host: str, port: int, roi_image_base64: str) -> None:
-    """Send ONLY the clock ROI as a small, dedicated UDP datagram.
-
-    This decouples ROI latency from the pose-inference path — the ROI is sent
-    microseconds after capture, independent of how long rtmlib/mmpose take.
-    Unity's PoseReceiver parses the same JSON schema (`roiImageBase64`) either
-    way, so no receiver change is needed. Keypoint-bearing pose packets are
-    still sent separately after inference.
-    """
-    if sock is None or port <= 0 or not roi_image_base64:
-        return
-    try:
-        msg = json.dumps({"roiImageBase64": roi_image_base64}).encode("utf-8")
-        sock.sendto(msg, (host, port))
-    except (OSError, TypeError):
-        pass
+def _resolve_clock_roi_payload(
+    frame,
+    clock_roi,
+    jpeg_quality: int,
+    downscale: int,
+    clock_stream_state: dict,
+    clock_stream_min_dt: float,
+    t_now: float,
+) -> str | None:
+    """Encode clock ROI after inference; rate-limit re-encode, reuse last JPEG between sends."""
+    if (t_now - clock_stream_state["last_run_t"]) >= clock_stream_min_dt:
+        roi_payload = _encode_clock_roi_base64(frame, clock_roi, jpeg_quality, downscale)
+        clock_stream_state["last_payload"] = roi_payload
+        clock_stream_state["last_run_t"] = t_now
+        return roi_payload or clock_stream_state["last_payload"] or None
+    return clock_stream_state["last_payload"] or None
 
 
 # -----------------------------------------------------------------------------
@@ -1553,7 +1538,7 @@ def main():
         _clock_max_fps = max(0.1, float(getattr(args, "clock_stream_max_fps", 10.0)))
         _clock_q = int(getattr(args, "clock_stream_jpeg_quality", 70))
         print(
-            f"Clock ROI stream: ON | max_fps={_clock_max_fps:.1f} | "
+            f"Clock ROI stream: ON (bundled in pose UDP) | max_fps={_clock_max_fps:.1f} | "
             f"jpeg_q={_clock_q} | roi={getattr(args, 'clock_roi', '') or 'full-frame'}"
         )
     if args.no_window:
@@ -1577,7 +1562,6 @@ def main():
     clock_stream_min_dt = 1.0 / clock_stream_max_fps
     clock_stream_jpeg_quality = int(getattr(args, "clock_stream_jpeg_quality", 55))
     clock_stream_downscale = int(getattr(args, "clock_downscale", 192) or 0)
-    clock_stream_separate_udp = bool(getattr(args, "clock_stream_separate_udp", True))
     clock_stream_state = {"last_run_t": 0.0, "last_payload": ""}
     process_state = {"prev_keypoints": None}
     ocr_interval = max(1, int(args.ocr_interval))
@@ -1598,19 +1582,6 @@ def main():
                 if not ok:
                     break
                 t_capture = time.perf_counter()
-
-                # LOW-LATENCY CLOCK ROI: encode + ship ROI BEFORE pose inference.
-                # The clock stream is independent of the pose pipeline, so by
-                # sending here we avoid ~15-30 ms of inference lag per frame.
-                if clock_stream_enable and clock_stream_separate_udp:
-                    if (t_capture - clock_stream_state["last_run_t"]) >= clock_stream_min_dt:
-                        early_roi = _encode_clock_roi_base64(
-                            frame, clock_roi, clock_stream_jpeg_quality, clock_stream_downscale
-                        )
-                        if early_roi:
-                            send_clock_roi_udp(udp_sock, args.udp_host, args.udp_port, early_roi)
-                            clock_stream_state["last_payload"] = early_roi
-                            clock_stream_state["last_run_t"] = t_capture
 
                 vis, infer_ms, n_persons, pose_data = run_frame(frame)
                 if args.ocr_enable and _ocr_backend_ready(args, rapid_ocr_engine):
@@ -1665,17 +1636,16 @@ def main():
                     ocr_state["idx"] += 1
                 t_after = time.perf_counter()
                 roi_payload = None
-                # Legacy bundled path: only used when --no-clock-stream-separate-udp.
-                # With the default separate-UDP mode the ROI was already sent above.
-                if clock_stream_enable and not clock_stream_separate_udp:
-                    if (t_after - clock_stream_state["last_run_t"]) >= clock_stream_min_dt:
-                        roi_payload = _encode_clock_roi_base64(
-                            frame, clock_roi, clock_stream_jpeg_quality, clock_stream_downscale
-                        )
-                        clock_stream_state["last_payload"] = roi_payload
-                        clock_stream_state["last_run_t"] = t_after
-                    else:
-                        roi_payload = clock_stream_state["last_payload"]
+                if clock_stream_enable:
+                    roi_payload = _resolve_clock_roi_payload(
+                        frame,
+                        clock_roi,
+                        clock_stream_jpeg_quality,
+                        clock_stream_downscale,
+                        clock_stream_state,
+                        clock_stream_min_dt,
+                        t_after,
+                    )
                 if getattr(args, "log_latency", False):
                     loop_ms = (t_after - t_capture) * 1000
                     latency_samples.append((loop_ms, infer_ms))
@@ -1698,7 +1668,7 @@ def main():
                     getattr(args, "smooth_pose", 0),
                     udp_prev_pose,
                     ocr_state["last"] if args.ocr_enable else None,
-                    roi_payload if (clock_stream_enable and not clock_stream_separate_udp) else None,
+                    roi_payload if clock_stream_enable else None,
                 )
                 with latest_lock:
                     nonlocal latest_result
@@ -1813,17 +1783,6 @@ def main():
                 break
             t_capture = time.perf_counter()
 
-            # LOW-LATENCY CLOCK ROI (non-threaded path): send BEFORE pose inference.
-            if clock_stream_enable and clock_stream_separate_udp:
-                if (t_capture - clock_stream_state["last_run_t"]) >= clock_stream_min_dt:
-                    early_roi = _encode_clock_roi_base64(
-                        frame, clock_roi, clock_stream_jpeg_quality, clock_stream_downscale
-                    )
-                    if early_roi:
-                        send_clock_roi_udp(udp_sock, args.udp_host, args.udp_port, early_roi)
-                        clock_stream_state["last_payload"] = early_roi
-                        clock_stream_state["last_run_t"] = t_capture
-
             vis, infer_ms, n_persons, pose_data = run_frame(frame)
             if args.ocr_enable and _ocr_backend_ready(args, rapid_ocr_engine):
                 now = time.perf_counter()
@@ -1877,16 +1836,16 @@ def main():
                 ocr_state["idx"] += 1
             t_after = time.perf_counter()
             roi_payload = None
-            # Legacy bundled path: only when --no-clock-stream-separate-udp.
-            if clock_stream_enable and not clock_stream_separate_udp:
-                if (t_after - clock_stream_state["last_run_t"]) >= clock_stream_min_dt:
-                    roi_payload = _encode_clock_roi_base64(
-                        frame, clock_roi, clock_stream_jpeg_quality, clock_stream_downscale
-                    )
-                    clock_stream_state["last_payload"] = roi_payload
-                    clock_stream_state["last_run_t"] = t_after
-                else:
-                    roi_payload = clock_stream_state["last_payload"]
+            if clock_stream_enable:
+                roi_payload = _resolve_clock_roi_payload(
+                    frame,
+                    clock_roi,
+                    clock_stream_jpeg_quality,
+                    clock_stream_downscale,
+                    clock_stream_state,
+                    clock_stream_min_dt,
+                    t_after,
+                )
             if getattr(args, "log_latency", False):
                 loop_ms = (t_after - t_capture) * 1000
                 latency_samples.append((loop_ms, infer_ms))
@@ -1909,7 +1868,7 @@ def main():
                 getattr(args, "smooth_pose", 0),
                 udp_prev_pose,
                 ocr_state["last"] if args.ocr_enable else None,
-                roi_payload if (clock_stream_enable and not clock_stream_separate_udp) else None,
+                roi_payload if clock_stream_enable else None,
             )
             elapsed = t_after - t_capture
             h, w = vis.shape[:2]

@@ -27,7 +27,7 @@ public class PoseReceiver : MonoBehaviour
 
     Socket _socket;
     // 128 KB: plain pose JSON is ~1 KB, but when pose.py streams the Clock ROI
-    // (base64-encoded JPEG crop in the same datagram via --clock-stream-enable),
+    // (base64-encoded JPEG crop bundled in the pose datagram via --clock-stream-enable),
     // packets routinely reach 5-20 KB. A 4 KB buffer triggered WSAEMSGSIZE on
     // Windows and every oversized datagram was dropped — pose and ROI alike.
     byte[] _buffer = new byte[128 * 1024];

@@ -44,6 +44,11 @@ pip install -r requirements.txt
 - Open `architect/` in Unity Hub.
 - Let Unity import packages and generate local cache folders.
 
+4. Optional runtime setup guides:
+
+- GPU acceleration (CUDA 12 + cuDNN 9 + ONNX Runtime GPU): `app/SETUP_GPU.md`
+- FLIR camera mode (Spinnaker + local Python wheel): `app/README.md` section **FLIR / Spinnaker setup (Windows)**
+
 ## Running the Pipeline
 
 From `app/`:
@@ -83,15 +88,15 @@ Detailed description and benchmark numbers: `docs/POSE_PROCESSING_OPTIMIZATION.m
 
 ## Live clock ROI image stream (Unity)
 
-The **Architect** Unity project can show a **low-latency camera crop** (where a wall clock sits) while pose keypoints still drive games and the avatar.
+The **Architect** Unity project can show a **camera crop of a wall clock** (for motion-to-photon latency measurement) while pose keypoints still drive games and the avatar.
 
 **Python (`pose.py`)**
 
 - Enable streaming: `--clock-stream-enable` (or `"clock_stream_enable": true` in `pose.json`).
 - **ROI** in normalized coordinates `[0,1]`: `--clock-roi x,y,w,h` or interactive selection in the preview window (**C** = clock ROI, **O** = OCR ROI, **X** = clear).
 - **UDP** must match Unity: `--udp-port 5555` and `--udp-host 127.0.0.1` (or your PC’s IP).
-- **Latency-oriented defaults** (also in `pose.json`): ROI is JPEG-encoded, optionally **downscaled** (`--clock-downscale`, default longest side 192 px), and by default sent as a **separate small UDP datagram right after capture** (`--clock-stream-separate-udp`, default on) so the image is not delayed until pose inference finishes. Pose JSON is still sent on its usual cadence.
-- Tunables: `--clock-stream-max-fps`, `--clock-stream-jpeg-quality`, `--no-clock-stream-separate-udp` to bundle ROI in the pose packet (legacy).
+- **Measurement path:** after pose inference on each frame, the ROI is JPEG-encoded (optionally **downscaled** via `--clock-downscale`, default longest side 192 px) and sent **in the same UDP JSON packet** as the pose keypoints (`roiImageBase64`). This keeps the clock display on the full capture-to-inference path used for MTP experiments.
+- Tunables: `--clock-stream-max-fps`, `--clock-stream-jpeg-quality`, `--clock-downscale`.
 
 **Unity (`architect/`)**
 

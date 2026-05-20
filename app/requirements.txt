@@ -15,7 +15,8 @@ numpy>=1.24,<2
 pytesseract
 # OCR uses the same ONNX Runtime stack as rtmlib.
 rapidocr-onnxruntime
-# FLIR/Spinnaker Python wheel is installed from local SDK package, e.g.:
+# FLIR/Spinnaker Python wheel is NOT on PyPI and is therefore not auto-installed by this file.
+# Install it manually from your local SDK package when using --camera-mode flir, e.g.:
 #   pip install ../spinnaker_python-4.3.0.189-cp310-cp310-win_amd64/spinnaker_python-4.3.0.189-cp310-cp310-win_amd64.whl
 # Optional PyTorch OCR (separate stack from rtmlib):
 # easyocr

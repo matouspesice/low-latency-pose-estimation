@@ -37,6 +37,10 @@ public class PoseAvatarDriver : MonoBehaviour
     [Range(0.02f, 0.2f)]
     public float stickThickness = 0.04f;
 
+    [Header("Split view")]
+    [Tooltip("Horizontal offset applied to the skeleton root (negative = shift left on screen).")]
+    public float skeletonOffsetX = 0f;
+
     Transform _debugRoot;
     bool _createdDebug;
     Vector3[] _smoothedPositions = new Vector3[17];
@@ -135,6 +139,25 @@ public class PoseAvatarDriver : MonoBehaviour
         _hasSmoothed = true;
 
         UpdateLimbSticks();
+        ApplySkeletonOffset();
+    }
+
+    void ApplySkeletonOffset()
+    {
+        if (_debugRoot == null) return;
+        _debugRoot.localPosition = new Vector3(skeletonOffsetX, 0f, 0f);
+    }
+
+    /// <summary>Updates joint sphere sizes after avatarScale changes at runtime (e.g. Clock split view).</summary>
+    public void RefreshJointSizes()
+    {
+        if (_debugRoot == null) return;
+        float r = 0.08f * avatarScale;
+        for (int i = 0; i < jointTransforms.Length; i++)
+        {
+            var t = jointTransforms[i];
+            if (t != null) t.localScale = Vector3.one * r;
+        }
     }
 
     void EnsureDebugSkeleton()

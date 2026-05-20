@@ -81,8 +81,44 @@ public class ArchitectGameSelector : MonoBehaviour
         if (clockButton != null) clockButton.onClick.AddListener(SelectClock);
         if (backToMenuButton != null) backToMenuButton.onClick.AddListener(BackToMenu);
 
+        HideDisabledModesUi();
         ShowModeSelect();
         if (modeSelectPanel != null) modeSelectPanel.transform.SetAsLastSibling();
+    }
+
+    /// <summary>Hides modes that are not offered in the menu (OCR, legacy balance/dodge games).</summary>
+    void HideDisabledModesUi()
+    {
+        if (ocrButton != null) ocrButton.gameObject.SetActive(false);
+        if (ocrUIPanel != null) ocrUIPanel.SetActive(false);
+        if (ocrMode != null) ocrMode.gameObject.SetActive(false);
+
+        if (poseDodgeButton != null) poseDodgeButton.gameObject.SetActive(false);
+        if (dodgeUIPanel != null) dodgeUIPanel.SetActive(false);
+        if (dodgeGame != null) dodgeGame.gameObject.SetActive(false);
+
+        if (singleLegBalanceButton != null) singleLegBalanceButton.gameObject.SetActive(false);
+        if (balanceUIPanel != null) balanceUIPanel.SetActive(false);
+        if (balanceGame != null) balanceGame.gameObject.SetActive(false);
+
+        if (leanBalanceButton != null) leanBalanceButton.gameObject.SetActive(false);
+        if (leanBalanceUIPanel != null) leanBalanceUIPanel.SetActive(false);
+        if (leanBalanceGame != null) leanBalanceGame.gameObject.SetActive(false);
+
+        HideMenuEntryByName("OcrButton", "OcrDescription", "OcrUIPanel");
+        HideMenuEntryByName("PoseDodgeButton", "PoseDodgeDescription", "DodgeUIPanel");
+        HideMenuEntryByName("SingleLegBalanceButton", "SingleLegBalanceDescription", "BalanceUIPanel");
+        HideMenuEntryByName("LeanBalanceButton", "LeanBalanceDescription", "LeanBalanceUIPanel");
+    }
+
+    static void HideMenuEntryByName(string buttonName, string descriptionName, string panelName)
+    {
+        var btn = FindInactiveGameObjectByName(buttonName);
+        if (btn != null) btn.SetActive(false);
+        var desc = FindInactiveGameObjectByName(descriptionName);
+        if (desc != null) desc.SetActive(false);
+        var panel = FindInactiveGameObjectByName(panelName);
+        if (panel != null) panel.SetActive(false);
     }
 
     static GameObject FindInactiveGameObjectByName(string name)
