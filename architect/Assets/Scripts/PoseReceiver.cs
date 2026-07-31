@@ -25,6 +25,9 @@ public class PoseReceiver : MonoBehaviour
     [Range(0f, 1f)]
     public float minConfidence = 0.3f;
 
+    [Tooltip("Optional shared trace file (same path as pose.py --pipeline-trace). Empty = off.")]
+    public string pipelineTracePath = "";
+
     Socket _socket;
     // 128 KB: plain pose JSON is ~1 KB, but when pose.py streams the Clock ROI
     // (base64-encoded JPEG crop bundled in the pose datagram via --clock-stream-enable),
@@ -37,6 +40,9 @@ public class PoseReceiver : MonoBehaviour
 
     void Start()
     {
+        if (!string.IsNullOrWhiteSpace(pipelineTracePath))
+            PipelineTrace.Init(pipelineTracePath);
+
         try
         {
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -64,10 +70,18 @@ public class PoseReceiver : MonoBehaviour
                 int count = _socket.ReceiveFrom(_buffer, ref remote);
                 if (count <= 0) continue;
 
+                int seq = -1;
+                if (PipelineTrace.Enabled)
+                    PipelineTrace.Log("unity_udp_received", seq, $"bytes={count}");
+
                 string json = Encoding.UTF8.GetString(_buffer, 0, count);
                 var pose = JsonUtility.FromJson<PoseMessage>(json);
                 if (pose != null)
                 {
+                    seq = pose.frameSeq;
+                    if (PipelineTrace.Enabled)
+                        PipelineTrace.Log("unity_packet_parsed", seq, $"keypoints={(pose.keypoints == null ? 0 : pose.keypoints.Length)}");
+
                     if (!_loggedFirstReceive)
                     {
                         _loggedFirstReceive = true;
@@ -82,6 +96,8 @@ public class PoseReceiver : MonoBehaviour
                     {
                         latestPose = pose;
                         _receivedAny = true;
+                        if (PipelineTrace.Enabled)
+                            PipelineTrace.Log("unity_pose_ready", seq);
                     }
                 }
             }
@@ -107,6 +123,7 @@ public class PoseReceiver : MonoBehaviour
     {
         try { _socket?.Close(); } catch (Exception) { }
         _socket = null;
+        PipelineTrace.Shutdown();
     }
 
     /// <summary>True if at least one pose has been received.</summary>

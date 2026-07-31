@@ -21,6 +21,8 @@ public class PoseMessage
     public int height;
     public string ocrText;
     public string roiImageBase64;
+    /// <summary>Monotonic frame id from pose.py (for pipeline trace correlation).</summary>
+    public int frameSeq;
 }
 
 /// <summary>

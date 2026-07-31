@@ -30,6 +30,7 @@ if _script_dir not in sys.path:
     sys.path.insert(0, _script_dir)
 
 from win_cuda_path import _ensure_cuda_in_path
+from pipeline_trace import PipelineTrace
 
 import cv2
 
@@ -67,6 +68,8 @@ def _load_config(path):
         "ocr_roi",
         "ocr_whitelist",
         "latency_csv",
+        "pipeline_trace",
+        "run_label",
         "ocr_backend",
         "clock_roi",
         "camera_auto_exposure",
@@ -150,6 +153,8 @@ def parse_args():
         "smooth_pose": 0,
         "log_latency": False,
         "latency_csv": "",
+        "pipeline_trace": "",
+        "run_label": "",
         "ocr_enable": False,
         "ocr_roi": "",
         "ocr_interval": 1,
@@ -258,6 +263,12 @@ def parse_args():
         help="Run capture+inference in a background thread; main thread only displays. Reduces latency by not blocking on imshow.",
     )
     p.add_argument(
+        "--no-threaded",
+        dest="threaded",
+        action="store_false",
+        help="Run capture+inference on the main thread (use to measure blocking preview cost).",
+    )
+    p.add_argument(
         "--no-window",
         action="store_true",
         default=defaults["no_window"],
@@ -344,6 +355,24 @@ def parse_args():
             "When --log-latency is set AND this path is non-empty, write per-frame latency "
             "(loop_ms, infer_ms) to that CSV. Default in pose.json is empty — no file is written."
         ),
+    )
+    p.add_argument(
+        "--pipeline-trace",
+        nargs="?",
+        const="pipeline_trace.txt",
+        default=defaults.get("pipeline_trace", ""),
+        metavar="PATH",
+        help=(
+            "Append timestamped pipeline events to a text file (image received, inference, UDP send, etc.). "
+            "Omit PATH to use pipeline_trace.txt in the working directory. Empty = disabled."
+        ),
+    )
+    p.add_argument(
+        "--run-label",
+        type=str,
+        default=defaults.get("run_label", ""),
+        metavar="NAME",
+        help="Label for this run in pipeline trace / benchmark reports (e.g. proc_on, flir_640).",
     )
     p.add_argument(
         "--ocr-enable",
@@ -1001,6 +1030,8 @@ def send_pose_udp(
     prev_pose: list | None = None,
     ocr_text: str | None = None,
     roi_image_base64: str | None = None,
+    frame_seq: int | None = None,
+    trace: PipelineTrace | None = None,
 ) -> None:
     if sock is None or port <= 0:
         return
@@ -1014,11 +1045,15 @@ def send_pose_udp(
         payload["ocrText"] = ocr_text
     if roi_image_base64 is not None:
         payload["roiImageBase64"] = roi_image_base64
+    if frame_seq is not None and frame_seq >= 0:
+        payload["frameSeq"] = frame_seq
     if not payload:
         return
     try:
         msg = json.dumps(payload).encode("utf-8")
         sock.sendto(msg, (host, port))
+        if trace is not None and trace.enabled and frame_seq is not None and frame_seq >= 0:
+            trace.log("sent_to_unity", seq=frame_seq, bytes=len(msg))
     except (OSError, TypeError):
         pass  # avoid spamming console on disconnect
 
@@ -1555,9 +1590,35 @@ def main():
     fps_smooth = 30.0
     infer_smooth_ms = 10.0
     latency_samples = []  # (loop_ms, infer_ms) when --log-latency
+    trace_path = (getattr(args, "pipeline_trace", "") or "").strip()
+    if trace_path and not os.path.isabs(trace_path):
+        trace_path = os.path.join(_script_dir, trace_path)
+    pipeline_trace = PipelineTrace(trace_path if trace_path else None)
+    if pipeline_trace.enabled:
+        print(f"Pipeline trace log: {trace_path}")
+    frame_seq = 0
     ocr_roi = _parse_ocr_roi(args.ocr_roi)
     clock_roi = _parse_ocr_roi(getattr(args, "clock_roi", ""))
     clock_stream_enable = bool(getattr(args, "clock_stream_enable", False))
+    if pipeline_trace.enabled:
+        import shlex
+
+        run_label = (getattr(args, "run_label", "") or "").strip()
+        pipeline_trace.log_session_start(
+            cmd=" ".join(shlex.quote(a) for a in sys.argv),
+            run_label=run_label,
+            backend=backend,
+            device=device,
+            camera_mode=args.camera_mode,
+            camera=args.camera,
+            width=args.width,
+            height=args.height,
+            threaded=int(bool(args.threaded)),
+            proc_enable=int(bool(getattr(args, "proc_enable", True))),
+            smooth_pose=float(getattr(args, "smooth_pose", 0) or 0),
+            clock_stream=int(bool(clock_stream_enable)),
+            udp_port=int(args.udp_port or 0),
+        )
     clock_stream_max_fps = max(0.1, float(getattr(args, "clock_stream_max_fps", 10.0)))
     clock_stream_min_dt = 1.0 / clock_stream_max_fps
     clock_stream_jpeg_quality = int(getattr(args, "clock_stream_jpeg_quality", 55))
@@ -1577,13 +1638,22 @@ def main():
         worker_state = {"processed_frames": 0}
 
         def worker():
+            nonlocal frame_seq
             while not stop_worker.is_set():
                 ok, frame = cap.read()
                 if not ok:
                     break
+                frame_seq += 1
+                seq = frame_seq
+                if pipeline_trace.enabled:
+                    pipeline_trace.log("image_received", seq=seq)
                 t_capture = time.perf_counter()
 
+                if pipeline_trace.enabled:
+                    pipeline_trace.log("processing_started", seq=seq)
                 vis, infer_ms, n_persons, pose_data = run_frame(frame)
+                if pipeline_trace.enabled:
+                    pipeline_trace.log("inference_done", seq=seq, infer_ms=f"{infer_ms:.2f}")
                 if args.ocr_enable and _ocr_backend_ready(args, rapid_ocr_engine):
                     now = time.perf_counter()
                     by_interval = (ocr_state["idx"] % ocr_interval) == 0
@@ -1646,6 +1716,8 @@ def main():
                         clock_stream_min_dt,
                         t_after,
                     )
+                    if pipeline_trace.enabled and roi_payload:
+                        pipeline_trace.log("roi_encoded", seq=seq)
                 if getattr(args, "log_latency", False):
                     loop_ms = (t_after - t_capture) * 1000
                     latency_samples.append((loop_ms, infer_ms))
@@ -1660,6 +1732,8 @@ def main():
                         getattr(args, "proc_alpha", 0.55),
                         getattr(args, "proc_min_alpha", 0.25),
                     )
+                    if pipeline_trace.enabled:
+                        pipeline_trace.log("postproc_done", seq=seq)
                 send_pose_udp(
                     udp_sock,
                     args.udp_host,
@@ -1669,6 +1743,8 @@ def main():
                     udp_prev_pose,
                     ocr_state["last"] if args.ocr_enable else None,
                     roi_payload if clock_stream_enable else None,
+                    frame_seq=seq,
+                    trace=pipeline_trace,
                 )
                 with latest_lock:
                     nonlocal latest_result
@@ -1781,9 +1857,17 @@ def main():
             ok, frame = cap.read()
             if not ok:
                 break
+            frame_seq += 1
+            seq = frame_seq
+            if pipeline_trace.enabled:
+                pipeline_trace.log("image_received", seq=seq)
             t_capture = time.perf_counter()
 
+            if pipeline_trace.enabled:
+                pipeline_trace.log("processing_started", seq=seq)
             vis, infer_ms, n_persons, pose_data = run_frame(frame)
+            if pipeline_trace.enabled:
+                pipeline_trace.log("inference_done", seq=seq, infer_ms=f"{infer_ms:.2f}")
             if args.ocr_enable and _ocr_backend_ready(args, rapid_ocr_engine):
                 now = time.perf_counter()
                 by_interval = (ocr_state["idx"] % ocr_interval) == 0
@@ -1846,6 +1930,8 @@ def main():
                     clock_stream_min_dt,
                     t_after,
                 )
+                if pipeline_trace.enabled and roi_payload:
+                    pipeline_trace.log("roi_encoded", seq=seq)
             if getattr(args, "log_latency", False):
                 loop_ms = (t_after - t_capture) * 1000
                 latency_samples.append((loop_ms, infer_ms))
@@ -1860,6 +1946,8 @@ def main():
                     getattr(args, "proc_alpha", 0.55),
                     getattr(args, "proc_min_alpha", 0.25),
                 )
+                if pipeline_trace.enabled:
+                    pipeline_trace.log("postproc_done", seq=seq)
             send_pose_udp(
                 udp_sock,
                 args.udp_host,
@@ -1869,6 +1957,8 @@ def main():
                 udp_prev_pose,
                 ocr_state["last"] if args.ocr_enable else None,
                 roi_payload if clock_stream_enable else None,
+                frame_seq=seq,
+                trace=pipeline_trace,
             )
             elapsed = t_after - t_capture
             h, w = vis.shape[:2]
@@ -1926,6 +2016,8 @@ def main():
                     clock_roi = None
                     ocr_roi = None
                     print("[ROI] Cleared clock + OCR ROIs (using full frame).")
+
+    pipeline_trace.close()
 
     cap.release()
     if udp_sock:

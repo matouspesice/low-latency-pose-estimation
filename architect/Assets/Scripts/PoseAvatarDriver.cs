@@ -45,8 +45,12 @@ public class PoseAvatarDriver : MonoBehaviour
     bool _createdDebug;
     Vector3[] _smoothedPositions = new Vector3[17];
     bool _hasSmoothed;
+    bool _debugVisualsVisible = true;
     Transform[] _limbTransforms;
     static readonly int LimbCount = CocoKeypointIndex.LimbEdges.Length;
+
+    /// <summary>True once at least one pose frame has been processed.</summary>
+    public bool HasValidPose => _hasSmoothed;
 
     void Start()
     {
@@ -66,12 +70,12 @@ public class PoseAvatarDriver : MonoBehaviour
         if (jointTransforms == null || jointTransforms.Length < 17)
             jointTransforms = new Transform[17];
 
-        if (createDebugSkeleton && !_createdDebug)
+        if (createDebugSkeleton && !_createdDebug && _debugVisualsVisible)
         {
             EnsureDebugSkeleton();
             _createdDebug = true;
         }
-        else if (createLimbSticks && _limbTransforms == null && _debugRoot != null)
+        else if (createLimbSticks && _debugVisualsVisible && _limbTransforms == null && _debugRoot != null)
         {
             _limbTransforms = new Transform[LimbCount];
             for (int i = 0; i < LimbCount; i++)
@@ -146,6 +150,26 @@ public class PoseAvatarDriver : MonoBehaviour
     {
         if (_debugRoot == null) return;
         _debugRoot.localPosition = new Vector3(skeletonOffsetX, 0f, 0f);
+    }
+
+    /// <summary>Returns the smoothed local joint position used for driving (includes skeleton offset).</summary>
+    public bool TryGetSmoothedJointLocal(int index, out Vector3 localPos)
+    {
+        localPos = default;
+        if (!_hasSmoothed || index < 0 || index >= _smoothedPositions.Length)
+            return false;
+
+        localPos = _smoothedPositions[index];
+        localPos.x += skeletonOffsetX;
+        return true;
+    }
+
+    /// <summary>Show or hide the procedural debug skeleton (e.g. when a Genies avatar is active).</summary>
+    public void SetDebugVisualsVisible(bool visible)
+    {
+        _debugVisualsVisible = visible;
+        if (_debugRoot != null)
+            _debugRoot.gameObject.SetActive(visible);
     }
 
     /// <summary>Updates joint sphere sizes after avatarScale changes at runtime (e.g. Clock split view).</summary>

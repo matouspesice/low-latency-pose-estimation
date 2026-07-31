@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 /// <summary>
@@ -21,6 +22,10 @@ public class CoinMineGameManager : MonoBehaviour
     public float forwardSpeed = 16f;
     [Tooltip("Lane half-width. Ball X is clamped to [-sideBound, +sideBound].")]
     public float sideBound = 5f;
+    [Tooltip("World Y of the ball centre while rolling on the lane.")]
+    public float ballSurfaceY = 0.5f;
+    [Tooltip("Ball radius used for invisible side boundaries (default sphere radius).")]
+    public float ballRadius = 0.5f;
     [Range(0.5f, 1f)]
     [Tooltip("How much of the lane tilt uses. 1 = full lane.")]
     public float tiltLaneRange = 1f;
@@ -78,6 +83,11 @@ public class CoinMineGameManager : MonoBehaviour
     void Awake()
     {
         ResolveInputChain();
+    }
+
+    void Start()
+    {
+        EnsureGameOverButtons();
     }
 
     /// <summary>
@@ -154,6 +164,8 @@ public class CoinMineGameManager : MonoBehaviour
     {
         _playing = false;
         if (_ballRb != null) _ballRb.linearVelocity = Vector3.zero;
+        TearDownWorld();
+        EnsureGameOverButtons();
         if (gameOverPanel != null)
         {
             gameOverPanel.transform.SetAsLastSibling();
@@ -161,6 +173,81 @@ public class CoinMineGameManager : MonoBehaviour
         }
         if (gameOverScoreText != null) gameOverScoreText.text = "Coins: " + _score;
         if (startPromptPanel != null) startPromptPanel.SetActive(false);
+    }
+
+    /// <summary>Returns to the Architect mode menu (used by game-over and exit buttons).</summary>
+    public void ExitToMenu()
+    {
+        StopGame();
+        var selector = FindFirstObjectByType<ArchitectGameSelector>();
+        if (selector != null)
+            selector.BackToMenu();
+    }
+
+    /// <summary>
+    /// Ensures Restart/Exit buttons exist on the game-over overlay and are wired.
+    /// The full-screen panel was covering the old top-right Exit button after a round ended.
+    /// </summary>
+    void EnsureGameOverButtons()
+    {
+        if (gameOverPanel == null) return;
+
+        EnsureGameOverButton("CoinRestartButton", "Restart", 0.40f, new Color(0.9f, 0.7f, 0.15f), StartGame);
+        EnsureGameOverButton("CoinGameOverExitButton", "Exit", 0.30f, new Color(0.65f, 0.2f, 0.2f), ExitToMenu);
+
+        var inGameExit = gameOverPanel.transform.parent != null
+            ? gameOverPanel.transform.parent.Find("CoinExitButton")
+            : null;
+        if (inGameExit != null)
+            WireButtonOnce(inGameExit.GetComponent<Button>(), ExitToMenu);
+    }
+
+    void EnsureGameOverButton(string name, string label, float anchorY, Color color, UnityAction action)
+    {
+        var existing = gameOverPanel.transform.Find(name);
+        GameObject go;
+        Button btn;
+        if (existing != null)
+        {
+            go = existing.gameObject;
+            btn = go.GetComponent<Button>();
+        }
+        else
+        {
+            go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            go.transform.SetParent(gameOverPanel.transform, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, anchorY);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(220f, 55f);
+            go.GetComponent<Image>().color = color;
+
+            var textGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            textGo.transform.SetParent(go.transform, false);
+            var textRt = textGo.GetComponent<RectTransform>();
+            textRt.anchorMin = Vector2.zero;
+            textRt.anchorMax = Vector2.one;
+            textRt.offsetMin = Vector2.zero;
+            textRt.offsetMax = Vector2.zero;
+            var tmp = textGo.GetComponent<TextMeshProUGUI>();
+            tmp.text = label;
+            tmp.fontSize = 28;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Color.white;
+            if (TMP_Settings.defaultFontAsset != null)
+                tmp.font = TMP_Settings.defaultFontAsset;
+            btn = go.GetComponent<Button>();
+        }
+
+        WireButtonOnce(btn, action);
+    }
+
+    static void WireButtonOnce(Button btn, UnityAction action)
+    {
+        if (btn == null || action == null) return;
+        btn.onClick.RemoveAllListeners();
+        btn.onClick.AddListener(action);
     }
 
     void FixedUpdate()
@@ -206,7 +293,8 @@ public class CoinMineGameManager : MonoBehaviour
                 if (Mathf.Abs(axis) < minTiltToMove) axis = 0f;
             }
         }
-        float targetX = Mathf.Clamp(axis * sideBound * tiltLaneRange, -sideBound, sideBound);
+        float maxX = EffectiveSideBoundX();
+        float targetX = Mathf.Clamp(axis * sideBound * tiltLaneRange, -maxX, maxX);
         _smoothedX = Mathf.Lerp(_smoothedX, targetX, 1f - positionSmoothing);
 
         // Apply X through both the Rigidbody and the Transform so a residual
@@ -215,8 +303,10 @@ public class CoinMineGameManager : MonoBehaviour
         // the body was just built and has a mid-step cache.
         var pos = _ballRb.transform.position;
         pos.x = _smoothedX;
+        pos = ClampBallToLane(pos);
         _ballRb.position = pos;
         _ballRb.MovePosition(pos);
+        ClampBallVelocity();
 
         if (youAreHereText != null)
         {
@@ -309,6 +399,42 @@ public class CoinMineGameManager : MonoBehaviour
     /// `_BaseColor`, Built-in uses `_Color`. Without this the shader lookup fails
     /// and everything renders pink ("missing shader").
     /// </summary>
+    float EffectiveSideBoundX()
+    {
+        float inset = Mathf.Max(0.01f, ballRadius);
+        return Mathf.Max(inset, sideBound - inset);
+    }
+
+    Vector3 ClampBallToLane(Vector3 pos)
+    {
+        float maxX = EffectiveSideBoundX();
+        pos.x = Mathf.Clamp(pos.x, -maxX, maxX);
+        pos.y = ballSurfaceY;
+        return pos;
+    }
+
+    void ClampBallVelocity()
+    {
+        if (_ballRb == null) return;
+        var vel = _ballRb.linearVelocity;
+        vel.x = 0f;
+        vel.y = 0f;
+        _ballRb.linearVelocity = vel;
+    }
+
+    static PhysicsMaterial MakeBouncelessPhysicsMaterial()
+    {
+        var mat = new PhysicsMaterial("CoinMineBallNoBounce")
+        {
+            bounciness = 0f,
+            dynamicFriction = 0f,
+            staticFriction = 0f,
+            bounceCombine = PhysicsMaterialCombine.Minimum,
+            frictionCombine = PhysicsMaterialCombine.Minimum,
+        };
+        return mat;
+    }
+
     static Material MakePipelineMaterial(Color color)
     {
         var shader = Shader.Find("Universal Render Pipeline/Lit");
@@ -344,8 +470,9 @@ public class CoinMineGameManager : MonoBehaviour
         var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
         wall.name = name;
         wall.transform.SetParent(parent, false);
-        wall.transform.localPosition = new Vector3(x, 1.5f, laneLength * 0.5f);
-        wall.transform.localScale = new Vector3(1f, 3f, laneLength);
+        const float wallHeight = 8f;
+        wall.transform.localPosition = new Vector3(x, wallHeight * 0.5f, laneLength * 0.5f);
+        wall.transform.localScale = new Vector3(1f, wallHeight, laneLength);
         var r = wall.GetComponent<Renderer>();
         if (r != null) r.enabled = false;
     }
@@ -356,13 +483,19 @@ public class CoinMineGameManager : MonoBehaviour
         ball.name = "Player";
         ball.tag = "Player";
         ball.transform.SetParent(parent, false);
-        ball.transform.localPosition = new Vector3(0f, 0.5f, 0f);
+        ball.transform.localPosition = new Vector3(0f, ballSurfaceY, 0f);
         var rb = ball.GetComponent<Rigidbody>();
         if (rb == null) rb = ball.AddComponent<Rigidbody>();
-        rb.useGravity = true;
+        rb.useGravity = false;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
+        var ballCollider = ball.GetComponent<SphereCollider>();
+        if (ballCollider != null)
+        {
+            ballCollider.material = MakeBouncelessPhysicsMaterial();
+            ballRadius = ballCollider.radius * Mathf.Max(ball.transform.localScale.x, ball.transform.localScale.y, ball.transform.localScale.z);
+        }
         var trigger = ball.AddComponent<CoinMineBallTrigger>();
         trigger.manager = this;
         var r = ball.GetComponent<Renderer>();

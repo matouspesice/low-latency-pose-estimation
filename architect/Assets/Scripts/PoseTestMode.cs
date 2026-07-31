@@ -18,14 +18,21 @@ public class PoseTestMode : MonoBehaviour
     public TMP_Text stabilityLabel;
     public TMP_Text keypointInfoLabel;
 
+    [Header("Genies avatar")]
+    public GeniesPoseAvatarDriver geniesAvatarDriver;
+    public float poseTestAvatarScale = 3.5f;
+    public float poseTestAvatarOffsetX = 0f;
+
     public bool IsActive { get; private set; }
 
-    void Start()
+    void Awake()
     {
         if (gestureDetector == null)
             gestureDetector = FindFirstObjectByType<PoseGestureDetector>();
         if (poseReceiver == null)
             poseReceiver = FindFirstObjectByType<PoseReceiver>();
+        if (geniesAvatarDriver == null)
+            geniesAvatarDriver = FindFirstObjectByType<GeniesPoseAvatarDriver>();
     }
 
     void Update()
@@ -67,11 +74,15 @@ public class PoseTestMode : MonoBehaviour
     public void Activate()
     {
         IsActive = true;
+        if (geniesAvatarDriver != null)
+            geniesAvatarDriver.BeginPoseDisplay(poseTestAvatarOffsetX, poseTestAvatarScale);
     }
 
     public void Deactivate()
     {
         IsActive = false;
+        if (geniesAvatarDriver != null)
+            geniesAvatarDriver.EndPoseDisplay();
     }
 
     static string FormatGesture(PoseGestureDetector.Gesture g)

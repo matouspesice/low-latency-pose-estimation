@@ -52,7 +52,7 @@ public class FrameSyncIndicator : MonoBehaviour
         {
             frameCountText.enableAutoSizing = false;
             frameCountText.overflowMode = TMPro.TextOverflowModes.Overflow;
-            frameCountText.enableWordWrapping = false;
+            frameCountText.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
         }
 
         Debug.Log($"[FrameSyncIndicator] vSyncCount={QualitySettings.vSyncCount}, " +

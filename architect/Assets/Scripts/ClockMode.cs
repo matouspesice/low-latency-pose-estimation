@@ -17,23 +17,32 @@ public class ClockMode : MonoBehaviour
     public TMP_Text statusLabel;
     public TMP_Text infoLabel;
 
+    [Header("Genies avatar")]
+    public GeniesPoseAvatarDriver geniesAvatarDriver;
+    public bool cycleGeniesAvatars = false;
+    public float geniesAvatarCycleSeconds = 30f;
+
     [Header("Split view")]
-    [Tooltip("Fraction of screen width used for the clock ROI panel (right side).")]
+    [Tooltip("Fraction of the screen width the transferred ROI image occupies on the right.")]
     [Range(0.25f, 0.75f)]
     public float rightPanelWidthFraction = 0.5f;
-
-    [Tooltip("World-space X offset for the pose avatar while Clock mode is active (negative = left).")]
+    [Tooltip("Horizontal world offset of the avatar/skeleton (negative = left half of the screen).")]
     public float avatarOffsetX = -4.5f;
+    [Tooltip("World-space size of the avatar in Clock ROI. Raise for a bigger avatar on the left half.")]
+    public float clockAvatarScale = 8.5f;
 
-    [Tooltip("Avatar scale while Clock mode is active (larger = easier to see on the left panel).")]
-    public float clockAvatarScale = 7f;
+    [Tooltip("Max ROI texture updates per second (decoding JPEG on the main thread is expensive).")]
+    public float maxRoiDecodeFps = 12f;
 
     Texture2D _roiTexture;
     PoseAvatarDriver _avatarDriver;
-    float _savedAvatarOffsetX;
-    float _savedAvatarScale;
     string _lastPayload;
+    string _pendingPayload;
+    string _infoCore = "Resolution: --";
     float _lastFrameTime;
+    float _lastDecodeTime;
+    int _lastTextureWidth;
+    int _lastTextureHeight;
 
     public bool IsActive { get; private set; }
 
@@ -43,17 +52,17 @@ public class ClockMode : MonoBehaviour
             poseReceiver = FindFirstObjectByType<PoseReceiver>();
         if (_avatarDriver == null)
             _avatarDriver = FindFirstObjectByType<PoseAvatarDriver>();
+        if (geniesAvatarDriver == null)
+            geniesAvatarDriver = FindFirstObjectByType<GeniesPoseAvatarDriver>();
     }
-    // NOTE: do NOT reset IsActive in Start(). Start() is deferred by Unity to
-    // after OnEnable, so `SelectClock()` in ArchitectGameSelector runs
-    // SetActive(true) + Activate() (IsActive=true) first, and Start() would
-    // then overwrite it back to false before the first Update — leaving the
-    // panel stuck on "waiting for UDP" even when packets are arriving.
-    // Activation/deactivation is fully controlled by Activate()/Deactivate().
 
     void Update()
     {
         if (!IsActive) return;
+
+        // Keep the avatar status (loading / loaded / failed-fallback) live on screen every frame,
+        // independent of the ROI decode throttle.
+        if (infoLabel != null) infoLabel.text = _infoCore + BuildAvatarStatus();
 
         if (poseReceiver == null)
         {
@@ -68,28 +77,48 @@ public class ClockMode : MonoBehaviour
             return;
         }
 
-        if (payload == _lastPayload)
-        {
-            return;
-        }
+        if (payload != _lastPayload)
+            _pendingPayload = payload;
 
-        _lastPayload = payload;
+        if (string.IsNullOrEmpty(_pendingPayload))
+            return;
+
+        float minInterval = 1f / Mathf.Max(1f, maxRoiDecodeFps);
+        if (Time.time - _lastDecodeTime < minInterval)
+            return;
+
+        string decodePayload = _pendingPayload;
+        _pendingPayload = null;
+        _lastDecodeTime = Time.time;
+
         try
         {
-            byte[] data = Convert.FromBase64String(payload);
-            if (_roiTexture == null) _roiTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            byte[] data = Convert.FromBase64String(decodePayload);
+            if (_roiTexture == null)
+                _roiTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+
             if (_roiTexture.LoadImage(data, false))
             {
+                _lastPayload = decodePayload;
+                if (PipelineTrace.Enabled && poseReceiver != null && poseReceiver.latestPose != null)
+                    PipelineTrace.Log("unity_roi_displayed", poseReceiver.latestPose.frameSeq,
+                        $"size={_roiTexture.width}x{_roiTexture.height}");
                 if (roiPreviewImage != null)
                 {
                     roiPreviewImage.texture = _roiTexture;
-                    FitRoiImageToRightEdge();
+                    if (_roiTexture.width != _lastTextureWidth || _roiTexture.height != _lastTextureHeight)
+                    {
+                        _lastTextureWidth = _roiTexture.width;
+                        _lastTextureHeight = _roiTexture.height;
+                        FitRoiImageToRightEdge();
+                    }
                 }
+
                 float now = Time.time;
                 float fps = _lastFrameTime > 0f ? 1f / Mathf.Max(0.0001f, now - _lastFrameTime) : 0f;
                 _lastFrameTime = now;
                 if (statusLabel != null) statusLabel.text = "Clock ROI stream: LIVE";
-                if (infoLabel != null) infoLabel.text = $"Resolution: {_roiTexture.width}x{_roiTexture.height} | Decode FPS: {fps:0.0}";
+                _infoCore = $"Resolution: {_roiTexture.width}x{_roiTexture.height} | Decode FPS: {fps:0.0}";
             }
         }
         catch (Exception)
@@ -101,11 +130,16 @@ public class ClockMode : MonoBehaviour
     public void Activate()
     {
         IsActive = true;
+        _pendingPayload = null;
         ApplySplitViewLayout();
-        if (_avatarDriver != null)
+        if (geniesAvatarDriver != null)
         {
-            _savedAvatarOffsetX = _avatarDriver.skeletonOffsetX;
-            _savedAvatarScale = _avatarDriver.avatarScale;
+            geniesAvatarDriver.BeginPoseDisplay(avatarOffsetX, clockAvatarScale);
+            if (cycleGeniesAvatars)
+                geniesAvatarDriver.StartCycling(geniesAvatarCycleSeconds);
+        }
+        else if (_avatarDriver != null)
+        {
             _avatarDriver.skeletonOffsetX = avatarOffsetX;
             _avatarDriver.avatarScale = clockAvatarScale;
             _avatarDriver.RefreshJointSizes();
@@ -115,24 +149,39 @@ public class ClockMode : MonoBehaviour
     public void Deactivate()
     {
         IsActive = false;
+        _pendingPayload = null;
+        _infoCore = "Resolution: --";
         if (statusLabel != null) statusLabel.text = "Clock ROI stream: waiting for UDP payload...";
         if (infoLabel != null) infoLabel.text = "Resolution: --";
-        if (_avatarDriver != null)
-        {
-            _avatarDriver.skeletonOffsetX = _savedAvatarOffsetX;
-            _avatarDriver.avatarScale = _savedAvatarScale;
-            _avatarDriver.RefreshJointSizes();
-        }
+        if (geniesAvatarDriver != null)
+            geniesAvatarDriver.EndPoseDisplay();
+    }
+
+    /// <summary>
+    /// Human-readable avatar state appended to the info line so a failed SDK load is never silent:
+    /// it makes clear when the debug skeleton is being shown as a fallback.
+    /// </summary>
+    string BuildAvatarStatus()
+    {
+        if (geniesAvatarDriver == null)
+            return string.Empty;
+        if (geniesAvatarDriver.IsDebugSkeletonSelected)
+            return " | Avatar: Debug Skeleton";
+        if (geniesAvatarDriver.IsLoading)
+            return $" | Avatar: loading {geniesAvatarDriver.CurrentAvatarName}...";
+        if (geniesAvatarDriver.IsLoaded)
+            return $" | Avatar: {geniesAvatarDriver.CurrentAvatarName}";
+        if (geniesAvatarDriver.IsCurrentSelectionFailed)
+            return $" | <color=#FF6B6B>Avatar \"{geniesAvatarDriver.CurrentAvatarName}\" failed to load \u2014 showing Debug Skeleton</color>";
+        return string.Empty;
     }
 
     void ApplySplitViewLayout()
     {
         if (roiPreviewImage == null) return;
-
         var previewRoot = roiPreviewImage.transform.parent as RectTransform;
         if (previewRoot != null)
             StretchRectToRightHalf(previewRoot, rightPanelWidthFraction);
-
         FitRoiImageToRightEdge();
     }
 
@@ -150,7 +199,6 @@ public class ClockMode : MonoBehaviour
     void FitRoiImageToRightEdge()
     {
         if (roiPreviewImage == null || _roiTexture == null) return;
-
         var parentRt = roiPreviewImage.transform.parent as RectTransform;
         if (parentRt == null) return;
 

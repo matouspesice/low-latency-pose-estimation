@@ -1,0 +1,802 @@
+2026-05-26 11:05:30.331 | python | stage=session_start | source=python | cmd='C:\Users\matou\Documents\MCI\Master Thesis\project pipeline\app\pose.py' --udp-port 5555 --no-window --pipeline-trace 'C:\Users\matou\Documents\MCI\Master Thesis\project pipeline\app\traces\threaded_proc_off.txt' --max-frames 200 --run-label threaded_proc_off --threaded --proc-disable | run_label=threaded_proc_off | backend=rtmlib | device=cuda | camera_mode=webcam | camera=0 | width=640 | height=480 | threaded=1 | proc_enable=0 | smooth_pose=0.0 | clock_stream=0 | udp_port=5555
+2026-05-26 11:05:30.341 | python | stage=image_received | seq=1
+2026-05-26 11:05:30.342 | python | stage=processing_started | seq=1
+2026-05-26 11:05:30.354 | python | stage=inference_done | seq=1 | infer_ms=10.64
+2026-05-26 11:05:30.355 | python | stage=sent_to_unity | seq=1 | bytes=1375
+2026-05-26 11:05:30.373 | python | stage=image_received | seq=2
+2026-05-26 11:05:30.373 | python | stage=processing_started | seq=2
+2026-05-26 11:05:30.386 | python | stage=inference_done | seq=2 | infer_ms=10.51
+2026-05-26 11:05:30.386 | python | stage=sent_to_unity | seq=2 | bytes=1379
+2026-05-26 11:05:30.407 | python | stage=image_received | seq=3
+2026-05-26 11:05:30.407 | python | stage=processing_started | seq=3
+2026-05-26 11:05:30.421 | python | stage=inference_done | seq=3 | infer_ms=13.31
+2026-05-26 11:05:30.421 | python | stage=sent_to_unity | seq=3 | bytes=1364
+2026-05-26 11:05:30.438 | python | stage=image_received | seq=4
+2026-05-26 11:05:30.438 | python | stage=processing_started | seq=4
+2026-05-26 11:05:30.451 | python | stage=inference_done | seq=4 | infer_ms=12.85
+2026-05-26 11:05:30.452 | python | stage=sent_to_unity | seq=4 | bytes=1369
+2026-05-26 11:05:30.469 | python | stage=image_received | seq=5
+2026-05-26 11:05:30.469 | python | stage=processing_started | seq=5
+2026-05-26 11:05:30.481 | python | stage=inference_done | seq=5 | infer_ms=11.06
+2026-05-26 11:05:30.481 | python | stage=sent_to_unity | seq=5 | bytes=1375
+2026-05-26 11:05:30.501 | python | stage=image_received | seq=6
+2026-05-26 11:05:30.501 | python | stage=processing_started | seq=6
+2026-05-26 11:05:30.537 | python | stage=inference_done | seq=6 | infer_ms=34.66
+2026-05-26 11:05:30.537 | python | stage=sent_to_unity | seq=6 | bytes=1380
+2026-05-26 11:05:30.538 | python | stage=image_received | seq=7
+2026-05-26 11:05:30.538 | python | stage=processing_started | seq=7
+2026-05-26 11:05:30.545 | python | stage=inference_done | seq=7 | infer_ms=8.15
+2026-05-26 11:05:30.547 | python | stage=sent_to_unity | seq=7 | bytes=1374
+2026-05-26 11:05:30.581 | python | stage=image_received | seq=8
+2026-05-26 11:05:30.581 | python | stage=processing_started | seq=8
+2026-05-26 11:05:30.590 | python | stage=inference_done | seq=8 | infer_ms=8.10
+2026-05-26 11:05:30.590 | python | stage=sent_to_unity | seq=8 | bytes=1370
+2026-05-26 11:05:30.614 | python | stage=image_received | seq=9
+2026-05-26 11:05:30.614 | python | stage=processing_started | seq=9
+2026-05-26 11:05:30.624 | python | stage=inference_done | seq=9 | infer_ms=9.33
+2026-05-26 11:05:30.624 | python | stage=sent_to_unity | seq=9 | bytes=1368
+2026-05-26 11:05:30.646 | python | stage=image_received | seq=10
+2026-05-26 11:05:30.646 | python | stage=processing_started | seq=10
+2026-05-26 11:05:30.655 | python | stage=inference_done | seq=10 | infer_ms=9.39
+2026-05-26 11:05:30.655 | python | stage=sent_to_unity | seq=10 | bytes=1368
+2026-05-26 11:05:30.678 | python | stage=image_received | seq=11
+2026-05-26 11:05:30.678 | python | stage=processing_started | seq=11
+2026-05-26 11:05:30.686 | python | stage=inference_done | seq=11 | infer_ms=8.13
+2026-05-26 11:05:30.686 | python | stage=sent_to_unity | seq=11 | bytes=1371
+2026-05-26 11:05:30.710 | python | stage=image_received | seq=12
+2026-05-26 11:05:30.710 | python | stage=processing_started | seq=12
+2026-05-26 11:05:30.720 | python | stage=inference_done | seq=12 | infer_ms=9.92
+2026-05-26 11:05:30.721 | python | stage=sent_to_unity | seq=12 | bytes=1375
+2026-05-26 11:05:30.741 | python | stage=image_received | seq=13
+2026-05-26 11:05:30.741 | python | stage=processing_started | seq=13
+2026-05-26 11:05:30.749 | python | stage=inference_done | seq=13 | infer_ms=6.19
+2026-05-26 11:05:30.749 | python | stage=sent_to_unity | seq=13 | bytes=1376
+2026-05-26 11:05:30.774 | python | stage=image_received | seq=14
+2026-05-26 11:05:30.774 | python | stage=processing_started | seq=14
+2026-05-26 11:05:30.780 | python | stage=inference_done | seq=14 | infer_ms=6.05
+2026-05-26 11:05:30.780 | python | stage=sent_to_unity | seq=14 | bytes=1374
+2026-05-26 11:05:30.806 | python | stage=image_received | seq=15
+2026-05-26 11:05:30.806 | python | stage=processing_started | seq=15
+2026-05-26 11:05:30.816 | python | stage=inference_done | seq=15 | infer_ms=8.43
+2026-05-26 11:05:30.816 | python | stage=sent_to_unity | seq=15 | bytes=1372
+2026-05-26 11:05:30.854 | python | stage=image_received | seq=16
+2026-05-26 11:05:30.854 | python | stage=processing_started | seq=16
+2026-05-26 11:05:30.888 | python | stage=inference_done | seq=16 | infer_ms=32.61
+2026-05-26 11:05:30.888 | python | stage=sent_to_unity | seq=16 | bytes=1370
+2026-05-26 11:05:30.888 | python | stage=image_received | seq=17
+2026-05-26 11:05:30.888 | python | stage=processing_started | seq=17
+2026-05-26 11:05:30.898 | python | stage=inference_done | seq=17 | infer_ms=9.50
+2026-05-26 11:05:30.898 | python | stage=sent_to_unity | seq=17 | bytes=1375
+2026-05-26 11:05:30.918 | python | stage=image_received | seq=18
+2026-05-26 11:05:30.918 | python | stage=processing_started | seq=18
+2026-05-26 11:05:30.926 | python | stage=inference_done | seq=18 | infer_ms=7.81
+2026-05-26 11:05:30.927 | python | stage=sent_to_unity | seq=18 | bytes=1371
+2026-05-26 11:05:30.949 | python | stage=image_received | seq=19
+2026-05-26 11:05:30.949 | python | stage=processing_started | seq=19
+2026-05-26 11:05:30.960 | python | stage=inference_done | seq=19 | infer_ms=9.98
+2026-05-26 11:05:30.960 | python | stage=sent_to_unity | seq=19 | bytes=1378
+2026-05-26 11:05:30.981 | python | stage=image_received | seq=20
+2026-05-26 11:05:30.982 | python | stage=processing_started | seq=20
+2026-05-26 11:05:30.990 | python | stage=inference_done | seq=20 | infer_ms=8.33
+2026-05-26 11:05:30.990 | python | stage=sent_to_unity | seq=20 | bytes=1374
+2026-05-26 11:05:31.013 | python | stage=image_received | seq=21
+2026-05-26 11:05:31.013 | python | stage=processing_started | seq=21
+2026-05-26 11:05:31.021 | python | stage=inference_done | seq=21 | infer_ms=7.64
+2026-05-26 11:05:31.021 | python | stage=sent_to_unity | seq=21 | bytes=1374
+2026-05-26 11:05:31.046 | python | stage=image_received | seq=22
+2026-05-26 11:05:31.046 | python | stage=processing_started | seq=22
+2026-05-26 11:05:31.055 | python | stage=inference_done | seq=22 | infer_ms=8.70
+2026-05-26 11:05:31.055 | python | stage=sent_to_unity | seq=22 | bytes=1372
+2026-05-26 11:05:31.077 | python | stage=image_received | seq=23
+2026-05-26 11:05:31.077 | python | stage=processing_started | seq=23
+2026-05-26 11:05:31.086 | python | stage=inference_done | seq=23 | infer_ms=7.74
+2026-05-26 11:05:31.086 | python | stage=sent_to_unity | seq=23 | bytes=1372
+2026-05-26 11:05:31.109 | python | stage=image_received | seq=24
+2026-05-26 11:05:31.109 | python | stage=processing_started | seq=24
+2026-05-26 11:05:31.119 | python | stage=inference_done | seq=24 | infer_ms=8.51
+2026-05-26 11:05:31.119 | python | stage=sent_to_unity | seq=24 | bytes=1374
+2026-05-26 11:05:31.158 | python | stage=image_received | seq=25
+2026-05-26 11:05:31.158 | python | stage=processing_started | seq=25
+2026-05-26 11:05:31.166 | python | stage=inference_done | seq=25 | infer_ms=8.23
+2026-05-26 11:05:31.167 | python | stage=sent_to_unity | seq=25 | bytes=1375
+2026-05-26 11:05:31.190 | python | stage=image_received | seq=26
+2026-05-26 11:05:31.190 | python | stage=processing_started | seq=26
+2026-05-26 11:05:31.218 | python | stage=inference_done | seq=26 | infer_ms=27.53
+2026-05-26 11:05:31.219 | python | stage=sent_to_unity | seq=26 | bytes=1369
+2026-05-26 11:05:31.223 | python | stage=image_received | seq=27
+2026-05-26 11:05:31.223 | python | stage=processing_started | seq=27
+2026-05-26 11:05:31.233 | python | stage=inference_done | seq=27 | infer_ms=8.75
+2026-05-26 11:05:31.233 | python | stage=sent_to_unity | seq=27 | bytes=1374
+2026-05-26 11:05:31.255 | python | stage=image_received | seq=28
+2026-05-26 11:05:31.255 | python | stage=processing_started | seq=28
+2026-05-26 11:05:31.266 | python | stage=inference_done | seq=28 | infer_ms=10.39
+2026-05-26 11:05:31.267 | python | stage=sent_to_unity | seq=28 | bytes=1372
+2026-05-26 11:05:31.287 | python | stage=image_received | seq=29
+2026-05-26 11:05:31.288 | python | stage=processing_started | seq=29
+2026-05-26 11:05:31.298 | python | stage=inference_done | seq=29 | infer_ms=9.88
+2026-05-26 11:05:31.299 | python | stage=sent_to_unity | seq=29 | bytes=1374
+2026-05-26 11:05:31.319 | python | stage=image_received | seq=30
+2026-05-26 11:05:31.319 | python | stage=processing_started | seq=30
+2026-05-26 11:05:31.331 | python | stage=inference_done | seq=30 | infer_ms=12.24
+2026-05-26 11:05:31.332 | python | stage=sent_to_unity | seq=30 | bytes=1377
+2026-05-26 11:05:31.350 | python | stage=image_received | seq=31
+2026-05-26 11:05:31.350 | python | stage=processing_started | seq=31
+2026-05-26 11:05:31.361 | python | stage=inference_done | seq=31 | infer_ms=10.66
+2026-05-26 11:05:31.362 | python | stage=sent_to_unity | seq=31 | bytes=1376
+2026-05-26 11:05:31.381 | python | stage=image_received | seq=32
+2026-05-26 11:05:31.382 | python | stage=processing_started | seq=32
+2026-05-26 11:05:31.393 | python | stage=inference_done | seq=32 | infer_ms=10.16
+2026-05-26 11:05:31.394 | python | stage=sent_to_unity | seq=32 | bytes=1366
+2026-05-26 11:05:31.414 | python | stage=image_received | seq=33
+2026-05-26 11:05:31.414 | python | stage=processing_started | seq=33
+2026-05-26 11:05:31.423 | python | stage=inference_done | seq=33 | infer_ms=8.88
+2026-05-26 11:05:31.424 | python | stage=sent_to_unity | seq=33 | bytes=1377
+2026-05-26 11:05:31.461 | python | stage=image_received | seq=34
+2026-05-26 11:05:31.461 | python | stage=processing_started | seq=34
+2026-05-26 11:05:31.470 | python | stage=inference_done | seq=34 | infer_ms=7.93
+2026-05-26 11:05:31.471 | python | stage=sent_to_unity | seq=34 | bytes=1372
+2026-05-26 11:05:31.494 | python | stage=image_received | seq=35
+2026-05-26 11:05:31.494 | python | stage=processing_started | seq=35
+2026-05-26 11:05:31.501 | python | stage=inference_done | seq=35 | infer_ms=7.23
+2026-05-26 11:05:31.502 | python | stage=sent_to_unity | seq=35 | bytes=1375
+2026-05-26 11:05:31.525 | python | stage=image_received | seq=36
+2026-05-26 11:05:31.525 | python | stage=processing_started | seq=36
+2026-05-26 11:05:31.553 | python | stage=inference_done | seq=36 | infer_ms=27.14
+2026-05-26 11:05:31.553 | python | stage=sent_to_unity | seq=36 | bytes=1372
+2026-05-26 11:05:31.557 | python | stage=image_received | seq=37
+2026-05-26 11:05:31.557 | python | stage=processing_started | seq=37
+2026-05-26 11:05:31.567 | python | stage=inference_done | seq=37 | infer_ms=9.14
+2026-05-26 11:05:31.567 | python | stage=sent_to_unity | seq=37 | bytes=1379
+2026-05-26 11:05:31.589 | python | stage=image_received | seq=38
+2026-05-26 11:05:31.589 | python | stage=processing_started | seq=38
+2026-05-26 11:05:31.598 | python | stage=inference_done | seq=38 | infer_ms=8.44
+2026-05-26 11:05:31.598 | python | stage=sent_to_unity | seq=38 | bytes=1373
+2026-05-26 11:05:31.621 | python | stage=image_received | seq=39
+2026-05-26 11:05:31.621 | python | stage=processing_started | seq=39
+2026-05-26 11:05:31.629 | python | stage=inference_done | seq=39 | infer_ms=7.27
+2026-05-26 11:05:31.629 | python | stage=sent_to_unity | seq=39 | bytes=1376
+2026-05-26 11:05:31.653 | python | stage=image_received | seq=40
+2026-05-26 11:05:31.653 | python | stage=processing_started | seq=40
+2026-05-26 11:05:31.665 | python | stage=inference_done | seq=40 | infer_ms=10.97
+2026-05-26 11:05:31.665 | python | stage=sent_to_unity | seq=40 | bytes=1375
+2026-05-26 11:05:31.685 | python | stage=image_received | seq=41
+2026-05-26 11:05:31.685 | python | stage=processing_started | seq=41
+2026-05-26 11:05:31.692 | python | stage=inference_done | seq=41 | infer_ms=7.74
+2026-05-26 11:05:31.692 | python | stage=sent_to_unity | seq=41 | bytes=1376
+2026-05-26 11:05:31.735 | python | stage=image_received | seq=42
+2026-05-26 11:05:31.735 | python | stage=processing_started | seq=42
+2026-05-26 11:05:31.745 | python | stage=inference_done | seq=42 | infer_ms=10.15
+2026-05-26 11:05:31.745 | python | stage=sent_to_unity | seq=42 | bytes=1370
+2026-05-26 11:05:31.766 | python | stage=image_received | seq=43
+2026-05-26 11:05:31.766 | python | stage=processing_started | seq=43
+2026-05-26 11:05:31.776 | python | stage=inference_done | seq=43 | infer_ms=10.06
+2026-05-26 11:05:31.777 | python | stage=sent_to_unity | seq=43 | bytes=1368
+2026-05-26 11:05:31.798 | python | stage=image_received | seq=44
+2026-05-26 11:05:31.798 | python | stage=processing_started | seq=44
+2026-05-26 11:05:31.808 | python | stage=inference_done | seq=44 | infer_ms=9.27
+2026-05-26 11:05:31.809 | python | stage=sent_to_unity | seq=44 | bytes=1375
+2026-05-26 11:05:31.830 | python | stage=image_received | seq=45
+2026-05-26 11:05:31.830 | python | stage=processing_started | seq=45
+2026-05-26 11:05:31.845 | python | stage=inference_done | seq=45 | infer_ms=13.75
+2026-05-26 11:05:31.846 | python | stage=sent_to_unity | seq=45 | bytes=1370
+2026-05-26 11:05:31.862 | python | stage=image_received | seq=46
+2026-05-26 11:05:31.862 | python | stage=processing_started | seq=46
+2026-05-26 11:05:31.903 | python | stage=inference_done | seq=46 | infer_ms=40.04
+2026-05-26 11:05:31.903 | python | stage=sent_to_unity | seq=46 | bytes=1378
+2026-05-26 11:05:31.904 | python | stage=image_received | seq=47
+2026-05-26 11:05:31.904 | python | stage=processing_started | seq=47
+2026-05-26 11:05:31.914 | python | stage=inference_done | seq=47 | infer_ms=10.02
+2026-05-26 11:05:31.914 | python | stage=sent_to_unity | seq=47 | bytes=1375
+2026-05-26 11:05:31.925 | python | stage=image_received | seq=48
+2026-05-26 11:05:31.926 | python | stage=processing_started | seq=48
+2026-05-26 11:05:31.938 | python | stage=inference_done | seq=48 | infer_ms=11.17
+2026-05-26 11:05:31.938 | python | stage=sent_to_unity | seq=48 | bytes=1375
+2026-05-26 11:05:31.958 | python | stage=image_received | seq=49
+2026-05-26 11:05:31.958 | python | stage=processing_started | seq=49
+2026-05-26 11:05:31.969 | python | stage=inference_done | seq=49 | infer_ms=9.52
+2026-05-26 11:05:31.969 | python | stage=sent_to_unity | seq=49 | bytes=1375
+2026-05-26 11:05:31.989 | python | stage=image_received | seq=50
+2026-05-26 11:05:31.989 | python | stage=processing_started | seq=50
+2026-05-26 11:05:31.999 | python | stage=inference_done | seq=50 | infer_ms=8.05
+2026-05-26 11:05:31.999 | python | stage=sent_to_unity | seq=50 | bytes=1375
+2026-05-26 11:05:32.038 | python | stage=image_received | seq=51
+2026-05-26 11:05:32.038 | python | stage=processing_started | seq=51
+2026-05-26 11:05:32.046 | python | stage=inference_done | seq=51 | infer_ms=7.42
+2026-05-26 11:05:32.046 | python | stage=sent_to_unity | seq=51 | bytes=1378
+2026-05-26 11:05:32.070 | python | stage=image_received | seq=52
+2026-05-26 11:05:32.070 | python | stage=processing_started | seq=52
+2026-05-26 11:05:32.077 | python | stage=inference_done | seq=52 | infer_ms=7.38
+2026-05-26 11:05:32.078 | python | stage=sent_to_unity | seq=52 | bytes=1373
+2026-05-26 11:05:32.101 | python | stage=image_received | seq=53
+2026-05-26 11:05:32.101 | python | stage=processing_started | seq=53
+2026-05-26 11:05:32.110 | python | stage=inference_done | seq=53 | infer_ms=8.74
+2026-05-26 11:05:32.111 | python | stage=sent_to_unity | seq=53 | bytes=1374
+2026-05-26 11:05:32.134 | python | stage=image_received | seq=54
+2026-05-26 11:05:32.134 | python | stage=processing_started | seq=54
+2026-05-26 11:05:32.141 | python | stage=inference_done | seq=54 | infer_ms=6.26
+2026-05-26 11:05:32.141 | python | stage=sent_to_unity | seq=54 | bytes=1376
+2026-05-26 11:05:32.167 | python | stage=image_received | seq=55
+2026-05-26 11:05:32.167 | python | stage=processing_started | seq=55
+2026-05-26 11:05:32.178 | python | stage=inference_done | seq=55 | infer_ms=11.33
+2026-05-26 11:05:32.179 | python | stage=sent_to_unity | seq=55 | bytes=1372
+2026-05-26 11:05:32.197 | python | stage=image_received | seq=56
+2026-05-26 11:05:32.197 | python | stage=processing_started | seq=56
+2026-05-26 11:05:32.226 | python | stage=inference_done | seq=56 | infer_ms=28.99
+2026-05-26 11:05:32.226 | python | stage=sent_to_unity | seq=56 | bytes=1376
+2026-05-26 11:05:32.228 | python | stage=image_received | seq=57
+2026-05-26 11:05:32.229 | python | stage=processing_started | seq=57
+2026-05-26 11:05:32.239 | python | stage=inference_done | seq=57 | infer_ms=9.97
+2026-05-26 11:05:32.239 | python | stage=sent_to_unity | seq=57 | bytes=1376
+2026-05-26 11:05:32.261 | python | stage=image_received | seq=58
+2026-05-26 11:05:32.261 | python | stage=processing_started | seq=58
+2026-05-26 11:05:32.272 | python | stage=inference_done | seq=58 | infer_ms=9.61
+2026-05-26 11:05:32.272 | python | stage=sent_to_unity | seq=58 | bytes=1373
+2026-05-26 11:05:32.310 | python | stage=image_received | seq=59
+2026-05-26 11:05:32.310 | python | stage=processing_started | seq=59
+2026-05-26 11:05:32.322 | python | stage=inference_done | seq=59 | infer_ms=11.43
+2026-05-26 11:05:32.323 | python | stage=sent_to_unity | seq=59 | bytes=1363
+2026-05-26 11:05:32.342 | python | stage=image_received | seq=60
+2026-05-26 11:05:32.343 | python | stage=processing_started | seq=60
+2026-05-26 11:05:32.350 | python | stage=inference_done | seq=60 | infer_ms=8.25
+2026-05-26 11:05:32.350 | python | stage=sent_to_unity | seq=60 | bytes=1363
+2026-05-26 11:05:32.374 | python | stage=image_received | seq=61
+2026-05-26 11:05:32.374 | python | stage=processing_started | seq=61
+2026-05-26 11:05:32.386 | python | stage=inference_done | seq=61 | infer_ms=10.72
+2026-05-26 11:05:32.386 | python | stage=sent_to_unity | seq=61 | bytes=1376
+2026-05-26 11:05:32.406 | python | stage=image_received | seq=62
+2026-05-26 11:05:32.406 | python | stage=processing_started | seq=62
+2026-05-26 11:05:32.417 | python | stage=inference_done | seq=62 | infer_ms=10.05
+2026-05-26 11:05:32.417 | python | stage=sent_to_unity | seq=62 | bytes=1377
+2026-05-26 11:05:32.438 | python | stage=image_received | seq=63
+2026-05-26 11:05:32.439 | python | stage=processing_started | seq=63
+2026-05-26 11:05:32.449 | python | stage=inference_done | seq=63 | infer_ms=9.94
+2026-05-26 11:05:32.449 | python | stage=sent_to_unity | seq=63 | bytes=1373
+2026-05-26 11:05:32.470 | python | stage=image_received | seq=64
+2026-05-26 11:05:32.470 | python | stage=processing_started | seq=64
+2026-05-26 11:05:32.479 | python | stage=inference_done | seq=64 | infer_ms=8.43
+2026-05-26 11:05:32.479 | python | stage=sent_to_unity | seq=64 | bytes=1374
+2026-05-26 11:05:32.502 | python | stage=image_received | seq=65
+2026-05-26 11:05:32.502 | python | stage=processing_started | seq=65
+2026-05-26 11:05:32.510 | python | stage=inference_done | seq=65 | infer_ms=8.86
+2026-05-26 11:05:32.511 | python | stage=sent_to_unity | seq=65 | bytes=1368
+2026-05-26 11:05:32.533 | python | stage=image_received | seq=66
+2026-05-26 11:05:32.533 | python | stage=processing_started | seq=66
+2026-05-26 11:05:32.562 | python | stage=inference_done | seq=66 | infer_ms=27.53
+2026-05-26 11:05:32.562 | python | stage=sent_to_unity | seq=66 | bytes=1367
+2026-05-26 11:05:32.568 | python | stage=image_received | seq=67
+2026-05-26 11:05:32.568 | python | stage=processing_started | seq=67
+2026-05-26 11:05:32.577 | python | stage=inference_done | seq=67 | infer_ms=8.43
+2026-05-26 11:05:32.577 | python | stage=sent_to_unity | seq=67 | bytes=1375
+2026-05-26 11:05:32.614 | python | stage=image_received | seq=68
+2026-05-26 11:05:32.614 | python | stage=processing_started | seq=68
+2026-05-26 11:05:32.623 | python | stage=inference_done | seq=68 | infer_ms=8.55
+2026-05-26 11:05:32.623 | python | stage=sent_to_unity | seq=68 | bytes=1377
+2026-05-26 11:05:32.647 | python | stage=image_received | seq=69
+2026-05-26 11:05:32.647 | python | stage=processing_started | seq=69
+2026-05-26 11:05:32.657 | python | stage=inference_done | seq=69 | infer_ms=9.53
+2026-05-26 11:05:32.658 | python | stage=sent_to_unity | seq=69 | bytes=1376
+2026-05-26 11:05:32.677 | python | stage=image_received | seq=70
+2026-05-26 11:05:32.677 | python | stage=processing_started | seq=70
+2026-05-26 11:05:32.688 | python | stage=inference_done | seq=70 | infer_ms=10.25
+2026-05-26 11:05:32.688 | python | stage=sent_to_unity | seq=70 | bytes=1370
+2026-05-26 11:05:32.710 | python | stage=image_received | seq=71
+2026-05-26 11:05:32.710 | python | stage=processing_started | seq=71
+2026-05-26 11:05:32.719 | python | stage=inference_done | seq=71 | infer_ms=7.71
+2026-05-26 11:05:32.719 | python | stage=sent_to_unity | seq=71 | bytes=1368
+2026-05-26 11:05:32.740 | python | stage=image_received | seq=72
+2026-05-26 11:05:32.740 | python | stage=processing_started | seq=72
+2026-05-26 11:05:32.749 | python | stage=inference_done | seq=72 | infer_ms=7.70
+2026-05-26 11:05:32.750 | python | stage=sent_to_unity | seq=72 | bytes=1375
+2026-05-26 11:05:32.774 | python | stage=image_received | seq=73
+2026-05-26 11:05:32.774 | python | stage=processing_started | seq=73
+2026-05-26 11:05:32.782 | python | stage=inference_done | seq=73 | infer_ms=6.93
+2026-05-26 11:05:32.782 | python | stage=sent_to_unity | seq=73 | bytes=1372
+2026-05-26 11:05:32.805 | python | stage=image_received | seq=74
+2026-05-26 11:05:32.805 | python | stage=processing_started | seq=74
+2026-05-26 11:05:32.815 | python | stage=inference_done | seq=74 | infer_ms=8.77
+2026-05-26 11:05:32.815 | python | stage=sent_to_unity | seq=74 | bytes=1378
+2026-05-26 11:05:32.839 | python | stage=image_received | seq=75
+2026-05-26 11:05:32.839 | python | stage=processing_started | seq=75
+2026-05-26 11:05:32.848 | python | stage=inference_done | seq=75 | infer_ms=9.24
+2026-05-26 11:05:32.848 | python | stage=sent_to_unity | seq=75 | bytes=1376
+2026-05-26 11:05:32.886 | python | stage=image_received | seq=76
+2026-05-26 11:05:32.886 | python | stage=processing_started | seq=76
+2026-05-26 11:05:32.915 | python | stage=inference_done | seq=76 | infer_ms=28.74
+2026-05-26 11:05:32.916 | python | stage=sent_to_unity | seq=76 | bytes=1375
+2026-05-26 11:05:32.918 | python | stage=image_received | seq=77
+2026-05-26 11:05:32.918 | python | stage=processing_started | seq=77
+2026-05-26 11:05:32.926 | python | stage=inference_done | seq=77 | infer_ms=8.30
+2026-05-26 11:05:32.926 | python | stage=sent_to_unity | seq=77 | bytes=1365
+2026-05-26 11:05:32.950 | python | stage=image_received | seq=78
+2026-05-26 11:05:32.950 | python | stage=processing_started | seq=78
+2026-05-26 11:05:32.961 | python | stage=inference_done | seq=78 | infer_ms=10.55
+2026-05-26 11:05:32.961 | python | stage=sent_to_unity | seq=78 | bytes=1376
+2026-05-26 11:05:32.981 | python | stage=image_received | seq=79
+2026-05-26 11:05:32.981 | python | stage=processing_started | seq=79
+2026-05-26 11:05:32.990 | python | stage=inference_done | seq=79 | infer_ms=9.02
+2026-05-26 11:05:32.990 | python | stage=sent_to_unity | seq=79 | bytes=1375
+2026-05-26 11:05:33.014 | python | stage=image_received | seq=80
+2026-05-26 11:05:33.014 | python | stage=processing_started | seq=80
+2026-05-26 11:05:33.023 | python | stage=inference_done | seq=80 | infer_ms=8.40
+2026-05-26 11:05:33.023 | python | stage=sent_to_unity | seq=80 | bytes=1373
+2026-05-26 11:05:33.047 | python | stage=image_received | seq=81
+2026-05-26 11:05:33.047 | python | stage=processing_started | seq=81
+2026-05-26 11:05:33.057 | python | stage=inference_done | seq=81 | infer_ms=9.17
+2026-05-26 11:05:33.057 | python | stage=sent_to_unity | seq=81 | bytes=1376
+2026-05-26 11:05:33.078 | python | stage=image_received | seq=82
+2026-05-26 11:05:33.078 | python | stage=processing_started | seq=82
+2026-05-26 11:05:33.089 | python | stage=inference_done | seq=82 | infer_ms=10.49
+2026-05-26 11:05:33.089 | python | stage=sent_to_unity | seq=82 | bytes=1367
+2026-05-26 11:05:33.109 | python | stage=image_received | seq=83
+2026-05-26 11:05:33.110 | python | stage=processing_started | seq=83
+2026-05-26 11:05:33.120 | python | stage=inference_done | seq=83 | infer_ms=9.96
+2026-05-26 11:05:33.121 | python | stage=sent_to_unity | seq=83 | bytes=1371
+2026-05-26 11:05:33.141 | python | stage=image_received | seq=84
+2026-05-26 11:05:33.141 | python | stage=processing_started | seq=84
+2026-05-26 11:05:33.149 | python | stage=inference_done | seq=84 | infer_ms=7.18
+2026-05-26 11:05:33.150 | python | stage=sent_to_unity | seq=84 | bytes=1370
+2026-05-26 11:05:33.189 | python | stage=image_received | seq=85
+2026-05-26 11:05:33.189 | python | stage=processing_started | seq=85
+2026-05-26 11:05:33.201 | python | stage=inference_done | seq=85 | infer_ms=10.58
+2026-05-26 11:05:33.201 | python | stage=sent_to_unity | seq=85 | bytes=1369
+2026-05-26 11:05:33.221 | python | stage=image_received | seq=86
+2026-05-26 11:05:33.221 | python | stage=processing_started | seq=86
+2026-05-26 11:05:33.256 | python | stage=inference_done | seq=86 | infer_ms=33.87
+2026-05-26 11:05:33.256 | python | stage=sent_to_unity | seq=86 | bytes=1374
+2026-05-26 11:05:33.256 | python | stage=image_received | seq=87
+2026-05-26 11:05:33.256 | python | stage=processing_started | seq=87
+2026-05-26 11:05:33.265 | python | stage=inference_done | seq=87 | infer_ms=8.79
+2026-05-26 11:05:33.265 | python | stage=sent_to_unity | seq=87 | bytes=1382
+2026-05-26 11:05:33.285 | python | stage=image_received | seq=88
+2026-05-26 11:05:33.286 | python | stage=processing_started | seq=88
+2026-05-26 11:05:33.295 | python | stage=inference_done | seq=88 | infer_ms=9.10
+2026-05-26 11:05:33.296 | python | stage=sent_to_unity | seq=88 | bytes=1368
+2026-05-26 11:05:33.318 | python | stage=image_received | seq=89
+2026-05-26 11:05:33.318 | python | stage=processing_started | seq=89
+2026-05-26 11:05:33.328 | python | stage=inference_done | seq=89 | infer_ms=9.52
+2026-05-26 11:05:33.328 | python | stage=sent_to_unity | seq=89 | bytes=1374
+2026-05-26 11:05:33.350 | python | stage=image_received | seq=90
+2026-05-26 11:05:33.350 | python | stage=processing_started | seq=90
+2026-05-26 11:05:33.358 | python | stage=inference_done | seq=90 | infer_ms=8.80
+2026-05-26 11:05:33.358 | python | stage=sent_to_unity | seq=90 | bytes=1370
+2026-05-26 11:05:33.382 | python | stage=image_received | seq=91
+2026-05-26 11:05:33.382 | python | stage=processing_started | seq=91
+2026-05-26 11:05:33.391 | python | stage=inference_done | seq=91 | infer_ms=8.53
+2026-05-26 11:05:33.391 | python | stage=sent_to_unity | seq=91 | bytes=1376
+2026-05-26 11:05:33.413 | python | stage=image_received | seq=92
+2026-05-26 11:05:33.413 | python | stage=processing_started | seq=92
+2026-05-26 11:05:33.420 | python | stage=inference_done | seq=92 | infer_ms=7.05
+2026-05-26 11:05:33.421 | python | stage=sent_to_unity | seq=92 | bytes=1379
+2026-05-26 11:05:33.446 | python | stage=image_received | seq=93
+2026-05-26 11:05:33.446 | python | stage=processing_started | seq=93
+2026-05-26 11:05:33.458 | python | stage=inference_done | seq=93 | infer_ms=12.61
+2026-05-26 11:05:33.459 | python | stage=sent_to_unity | seq=93 | bytes=1374
+2026-05-26 11:05:33.494 | python | stage=image_received | seq=94
+2026-05-26 11:05:33.494 | python | stage=processing_started | seq=94
+2026-05-26 11:05:33.504 | python | stage=inference_done | seq=94 | infer_ms=9.40
+2026-05-26 11:05:33.504 | python | stage=sent_to_unity | seq=94 | bytes=1368
+2026-05-26 11:05:33.526 | python | stage=image_received | seq=95
+2026-05-26 11:05:33.526 | python | stage=processing_started | seq=95
+2026-05-26 11:05:33.537 | python | stage=inference_done | seq=95 | infer_ms=10.38
+2026-05-26 11:05:33.537 | python | stage=sent_to_unity | seq=95 | bytes=1375
+2026-05-26 11:05:33.558 | python | stage=image_received | seq=96
+2026-05-26 11:05:33.558 | python | stage=processing_started | seq=96
+2026-05-26 11:05:33.589 | python | stage=inference_done | seq=96 | infer_ms=29.93
+2026-05-26 11:05:33.590 | python | stage=sent_to_unity | seq=96 | bytes=1371
+2026-05-26 11:05:33.590 | python | stage=image_received | seq=97
+2026-05-26 11:05:33.590 | python | stage=processing_started | seq=97
+2026-05-26 11:05:33.599 | python | stage=inference_done | seq=97 | infer_ms=8.89
+2026-05-26 11:05:33.600 | python | stage=sent_to_unity | seq=97 | bytes=1377
+2026-05-26 11:05:33.623 | python | stage=image_received | seq=98
+2026-05-26 11:05:33.623 | python | stage=processing_started | seq=98
+2026-05-26 11:05:33.636 | python | stage=inference_done | seq=98 | infer_ms=12.21
+2026-05-26 11:05:33.637 | python | stage=sent_to_unity | seq=98 | bytes=1370
+2026-05-26 11:05:33.654 | python | stage=image_received | seq=99
+2026-05-26 11:05:33.654 | python | stage=processing_started | seq=99
+2026-05-26 11:05:33.663 | python | stage=inference_done | seq=99 | infer_ms=8.94
+2026-05-26 11:05:33.663 | python | stage=sent_to_unity | seq=99 | bytes=1371
+2026-05-26 11:05:33.685 | python | stage=image_received | seq=100
+2026-05-26 11:05:33.685 | python | stage=processing_started | seq=100
+2026-05-26 11:05:33.696 | python | stage=inference_done | seq=100 | infer_ms=11.07
+2026-05-26 11:05:33.697 | python | stage=sent_to_unity | seq=100 | bytes=1372
+2026-05-26 11:05:33.718 | python | stage=image_received | seq=101
+2026-05-26 11:05:33.718 | python | stage=processing_started | seq=101
+2026-05-26 11:05:33.729 | python | stage=inference_done | seq=101 | infer_ms=10.17
+2026-05-26 11:05:33.729 | python | stage=sent_to_unity | seq=101 | bytes=1372
+2026-05-26 11:05:33.767 | python | stage=image_received | seq=102
+2026-05-26 11:05:33.767 | python | stage=processing_started | seq=102
+2026-05-26 11:05:33.777 | python | stage=inference_done | seq=102 | infer_ms=10.24
+2026-05-26 11:05:33.777 | python | stage=sent_to_unity | seq=102 | bytes=1375
+2026-05-26 11:05:33.798 | python | stage=image_received | seq=103
+2026-05-26 11:05:33.798 | python | stage=processing_started | seq=103
+2026-05-26 11:05:33.811 | python | stage=inference_done | seq=103 | infer_ms=12.13
+2026-05-26 11:05:33.811 | python | stage=sent_to_unity | seq=103 | bytes=1374
+2026-05-26 11:05:33.828 | python | stage=image_received | seq=104
+2026-05-26 11:05:33.829 | python | stage=processing_started | seq=104
+2026-05-26 11:05:33.842 | python | stage=inference_done | seq=104 | infer_ms=12.26
+2026-05-26 11:05:33.842 | python | stage=sent_to_unity | seq=104 | bytes=1376
+2026-05-26 11:05:33.861 | python | stage=image_received | seq=105
+2026-05-26 11:05:33.861 | python | stage=processing_started | seq=105
+2026-05-26 11:05:33.867 | python | stage=inference_done | seq=105 | infer_ms=5.78
+2026-05-26 11:05:33.868 | python | stage=sent_to_unity | seq=105 | bytes=1373
+2026-05-26 11:05:33.893 | python | stage=image_received | seq=106
+2026-05-26 11:05:33.893 | python | stage=processing_started | seq=106
+2026-05-26 11:05:33.921 | python | stage=inference_done | seq=106 | infer_ms=27.94
+2026-05-26 11:05:33.922 | python | stage=sent_to_unity | seq=106 | bytes=1376
+2026-05-26 11:05:33.926 | python | stage=image_received | seq=107
+2026-05-26 11:05:33.926 | python | stage=processing_started | seq=107
+2026-05-26 11:05:33.935 | python | stage=inference_done | seq=107 | infer_ms=9.07
+2026-05-26 11:05:33.935 | python | stage=sent_to_unity | seq=107 | bytes=1375
+2026-05-26 11:05:33.957 | python | stage=image_received | seq=108
+2026-05-26 11:05:33.957 | python | stage=processing_started | seq=108
+2026-05-26 11:05:33.969 | python | stage=inference_done | seq=108 | infer_ms=11.25
+2026-05-26 11:05:33.969 | python | stage=sent_to_unity | seq=108 | bytes=1375
+2026-05-26 11:05:33.989 | python | stage=image_received | seq=109
+2026-05-26 11:05:33.989 | python | stage=processing_started | seq=109
+2026-05-26 11:05:33.999 | python | stage=inference_done | seq=109 | infer_ms=8.41
+2026-05-26 11:05:33.999 | python | stage=sent_to_unity | seq=109 | bytes=1376
+2026-05-26 11:05:34.022 | python | stage=image_received | seq=110
+2026-05-26 11:05:34.023 | python | stage=processing_started | seq=110
+2026-05-26 11:05:34.031 | python | stage=inference_done | seq=110 | infer_ms=8.67
+2026-05-26 11:05:34.031 | python | stage=sent_to_unity | seq=110 | bytes=1370
+2026-05-26 11:05:34.070 | python | stage=image_received | seq=111
+2026-05-26 11:05:34.070 | python | stage=processing_started | seq=111
+2026-05-26 11:05:34.077 | python | stage=inference_done | seq=111 | infer_ms=6.35
+2026-05-26 11:05:34.078 | python | stage=sent_to_unity | seq=111 | bytes=1369
+2026-05-26 11:05:34.101 | python | stage=image_received | seq=112
+2026-05-26 11:05:34.101 | python | stage=processing_started | seq=112
+2026-05-26 11:05:34.110 | python | stage=inference_done | seq=112 | infer_ms=9.26
+2026-05-26 11:05:34.110 | python | stage=sent_to_unity | seq=112 | bytes=1376
+2026-05-26 11:05:34.135 | python | stage=image_received | seq=113
+2026-05-26 11:05:34.136 | python | stage=processing_started | seq=113
+2026-05-26 11:05:34.144 | python | stage=inference_done | seq=113 | infer_ms=7.53
+2026-05-26 11:05:34.144 | python | stage=sent_to_unity | seq=113 | bytes=1374
+2026-05-26 11:05:34.167 | python | stage=image_received | seq=114
+2026-05-26 11:05:34.167 | python | stage=processing_started | seq=114
+2026-05-26 11:05:34.179 | python | stage=inference_done | seq=114 | infer_ms=12.01
+2026-05-26 11:05:34.179 | python | stage=sent_to_unity | seq=114 | bytes=1372
+2026-05-26 11:05:34.198 | python | stage=image_received | seq=115
+2026-05-26 11:05:34.198 | python | stage=processing_started | seq=115
+2026-05-26 11:05:34.207 | python | stage=inference_done | seq=115 | infer_ms=8.07
+2026-05-26 11:05:34.207 | python | stage=sent_to_unity | seq=115 | bytes=1378
+2026-05-26 11:05:34.230 | python | stage=image_received | seq=116
+2026-05-26 11:05:34.230 | python | stage=processing_started | seq=116
+2026-05-26 11:05:34.259 | python | stage=inference_done | seq=116 | infer_ms=28.82
+2026-05-26 11:05:34.260 | python | stage=sent_to_unity | seq=116 | bytes=1372
+2026-05-26 11:05:34.261 | python | stage=image_received | seq=117
+2026-05-26 11:05:34.261 | python | stage=processing_started | seq=117
+2026-05-26 11:05:34.271 | python | stage=inference_done | seq=117 | infer_ms=8.46
+2026-05-26 11:05:34.271 | python | stage=sent_to_unity | seq=117 | bytes=1380
+2026-05-26 11:05:34.294 | python | stage=image_received | seq=118
+2026-05-26 11:05:34.294 | python | stage=processing_started | seq=118
+2026-05-26 11:05:34.305 | python | stage=inference_done | seq=118 | infer_ms=10.01
+2026-05-26 11:05:34.305 | python | stage=sent_to_unity | seq=118 | bytes=1374
+2026-05-26 11:05:34.343 | python | stage=image_received | seq=119
+2026-05-26 11:05:34.343 | python | stage=processing_started | seq=119
+2026-05-26 11:05:34.352 | python | stage=inference_done | seq=119 | infer_ms=8.85
+2026-05-26 11:05:34.353 | python | stage=sent_to_unity | seq=119 | bytes=1376
+2026-05-26 11:05:34.373 | python | stage=image_received | seq=120
+2026-05-26 11:05:34.373 | python | stage=processing_started | seq=120
+2026-05-26 11:05:34.382 | python | stage=inference_done | seq=120 | infer_ms=7.44
+2026-05-26 11:05:34.382 | python | stage=sent_to_unity | seq=120 | bytes=1372
+2026-05-26 11:05:34.406 | python | stage=image_received | seq=121
+2026-05-26 11:05:34.406 | python | stage=processing_started | seq=121
+2026-05-26 11:05:34.414 | python | stage=inference_done | seq=121 | infer_ms=8.88
+2026-05-26 11:05:34.415 | python | stage=sent_to_unity | seq=121 | bytes=1381
+2026-05-26 11:05:34.437 | python | stage=image_received | seq=122
+2026-05-26 11:05:34.437 | python | stage=processing_started | seq=122
+2026-05-26 11:05:34.443 | python | stage=inference_done | seq=122 | infer_ms=6.00
+2026-05-26 11:05:34.443 | python | stage=sent_to_unity | seq=122 | bytes=1371
+2026-05-26 11:05:34.469 | python | stage=image_received | seq=123
+2026-05-26 11:05:34.470 | python | stage=processing_started | seq=123
+2026-05-26 11:05:34.481 | python | stage=inference_done | seq=123 | infer_ms=10.43
+2026-05-26 11:05:34.481 | python | stage=sent_to_unity | seq=123 | bytes=1374
+2026-05-26 11:05:34.502 | python | stage=image_received | seq=124
+2026-05-26 11:05:34.502 | python | stage=processing_started | seq=124
+2026-05-26 11:05:34.508 | python | stage=inference_done | seq=124 | infer_ms=5.70
+2026-05-26 11:05:34.508 | python | stage=sent_to_unity | seq=124 | bytes=1369
+2026-05-26 11:05:34.533 | python | stage=image_received | seq=125
+2026-05-26 11:05:34.533 | python | stage=processing_started | seq=125
+2026-05-26 11:05:34.541 | python | stage=inference_done | seq=125 | infer_ms=7.20
+2026-05-26 11:05:34.541 | python | stage=sent_to_unity | seq=125 | bytes=1379
+2026-05-26 11:05:34.564 | python | stage=image_received | seq=126
+2026-05-26 11:05:34.566 | python | stage=processing_started | seq=126
+2026-05-26 11:05:34.594 | python | stage=inference_done | seq=126 | infer_ms=27.71
+2026-05-26 11:05:34.594 | python | stage=sent_to_unity | seq=126 | bytes=1375
+2026-05-26 11:05:34.598 | python | stage=image_received | seq=127
+2026-05-26 11:05:34.598 | python | stage=processing_started | seq=127
+2026-05-26 11:05:34.606 | python | stage=inference_done | seq=127 | infer_ms=8.17
+2026-05-26 11:05:34.606 | python | stage=sent_to_unity | seq=127 | bytes=1370
+2026-05-26 11:05:34.646 | python | stage=image_received | seq=128
+2026-05-26 11:05:34.646 | python | stage=processing_started | seq=128
+2026-05-26 11:05:34.656 | python | stage=inference_done | seq=128 | infer_ms=9.89
+2026-05-26 11:05:34.656 | python | stage=sent_to_unity | seq=128 | bytes=1374
+2026-05-26 11:05:34.677 | python | stage=image_received | seq=129
+2026-05-26 11:05:34.677 | python | stage=processing_started | seq=129
+2026-05-26 11:05:34.689 | python | stage=inference_done | seq=129 | infer_ms=10.95
+2026-05-26 11:05:34.689 | python | stage=sent_to_unity | seq=129 | bytes=1376
+2026-05-26 11:05:34.710 | python | stage=image_received | seq=130
+2026-05-26 11:05:34.710 | python | stage=processing_started | seq=130
+2026-05-26 11:05:34.718 | python | stage=inference_done | seq=130 | infer_ms=7.65
+2026-05-26 11:05:34.718 | python | stage=sent_to_unity | seq=130 | bytes=1379
+2026-05-26 11:05:34.741 | python | stage=image_received | seq=131
+2026-05-26 11:05:34.741 | python | stage=processing_started | seq=131
+2026-05-26 11:05:34.749 | python | stage=inference_done | seq=131 | infer_ms=7.57
+2026-05-26 11:05:34.749 | python | stage=sent_to_unity | seq=131 | bytes=1373
+2026-05-26 11:05:34.775 | python | stage=image_received | seq=132
+2026-05-26 11:05:34.775 | python | stage=processing_started | seq=132
+2026-05-26 11:05:34.785 | python | stage=inference_done | seq=132 | infer_ms=9.94
+2026-05-26 11:05:34.785 | python | stage=sent_to_unity | seq=132 | bytes=1371
+2026-05-26 11:05:34.806 | python | stage=image_received | seq=133
+2026-05-26 11:05:34.806 | python | stage=processing_started | seq=133
+2026-05-26 11:05:34.815 | python | stage=inference_done | seq=133 | infer_ms=8.98
+2026-05-26 11:05:34.815 | python | stage=sent_to_unity | seq=133 | bytes=1377
+2026-05-26 11:05:34.838 | python | stage=image_received | seq=134
+2026-05-26 11:05:34.838 | python | stage=processing_started | seq=134
+2026-05-26 11:05:34.851 | python | stage=inference_done | seq=134 | infer_ms=12.41
+2026-05-26 11:05:34.852 | python | stage=sent_to_unity | seq=134 | bytes=1374
+2026-05-26 11:05:34.870 | python | stage=image_received | seq=135
+2026-05-26 11:05:34.870 | python | stage=processing_started | seq=135
+2026-05-26 11:05:34.880 | python | stage=inference_done | seq=135 | infer_ms=9.55
+2026-05-26 11:05:34.880 | python | stage=sent_to_unity | seq=135 | bytes=1375
+2026-05-26 11:05:34.916 | python | stage=image_received | seq=136
+2026-05-26 11:05:34.917 | python | stage=processing_started | seq=136
+2026-05-26 11:05:34.944 | python | stage=inference_done | seq=136 | infer_ms=26.92
+2026-05-26 11:05:34.945 | python | stage=sent_to_unity | seq=136 | bytes=1374
+2026-05-26 11:05:34.949 | python | stage=image_received | seq=137
+2026-05-26 11:05:34.949 | python | stage=processing_started | seq=137
+2026-05-26 11:05:34.956 | python | stage=inference_done | seq=137 | infer_ms=6.98
+2026-05-26 11:05:34.956 | python | stage=sent_to_unity | seq=137 | bytes=1374
+2026-05-26 11:05:34.982 | python | stage=image_received | seq=138
+2026-05-26 11:05:34.982 | python | stage=processing_started | seq=138
+2026-05-26 11:05:34.992 | python | stage=inference_done | seq=138 | infer_ms=8.87
+2026-05-26 11:05:34.993 | python | stage=sent_to_unity | seq=138 | bytes=1370
+2026-05-26 11:05:35.014 | python | stage=image_received | seq=139
+2026-05-26 11:05:35.014 | python | stage=processing_started | seq=139
+2026-05-26 11:05:35.022 | python | stage=inference_done | seq=139 | infer_ms=9.04
+2026-05-26 11:05:35.024 | python | stage=sent_to_unity | seq=139 | bytes=1374
+2026-05-26 11:05:35.045 | python | stage=image_received | seq=140
+2026-05-26 11:05:35.045 | python | stage=processing_started | seq=140
+2026-05-26 11:05:35.053 | python | stage=inference_done | seq=140 | infer_ms=7.44
+2026-05-26 11:05:35.053 | python | stage=sent_to_unity | seq=140 | bytes=1371
+2026-05-26 11:05:35.078 | python | stage=image_received | seq=141
+2026-05-26 11:05:35.078 | python | stage=processing_started | seq=141
+2026-05-26 11:05:35.085 | python | stage=inference_done | seq=141 | infer_ms=6.11
+2026-05-26 11:05:35.085 | python | stage=sent_to_unity | seq=141 | bytes=1367
+2026-05-26 11:05:35.109 | python | stage=image_received | seq=142
+2026-05-26 11:05:35.109 | python | stage=processing_started | seq=142
+2026-05-26 11:05:35.117 | python | stage=inference_done | seq=142 | infer_ms=7.68
+2026-05-26 11:05:35.117 | python | stage=sent_to_unity | seq=142 | bytes=1377
+2026-05-26 11:05:35.141 | python | stage=image_received | seq=143
+2026-05-26 11:05:35.141 | python | stage=processing_started | seq=143
+2026-05-26 11:05:35.148 | python | stage=inference_done | seq=143 | infer_ms=6.29
+2026-05-26 11:05:35.149 | python | stage=sent_to_unity | seq=143 | bytes=1375
+2026-05-26 11:05:35.173 | python | stage=image_received | seq=144
+2026-05-26 11:05:35.173 | python | stage=processing_started | seq=144
+2026-05-26 11:05:35.185 | python | stage=inference_done | seq=144 | infer_ms=11.07
+2026-05-26 11:05:35.185 | python | stage=sent_to_unity | seq=144 | bytes=1373
+2026-05-26 11:05:35.221 | python | stage=image_received | seq=145
+2026-05-26 11:05:35.222 | python | stage=processing_started | seq=145
+2026-05-26 11:05:35.233 | python | stage=inference_done | seq=145 | infer_ms=9.26
+2026-05-26 11:05:35.233 | python | stage=sent_to_unity | seq=145 | bytes=1374
+2026-05-26 11:05:35.253 | python | stage=image_received | seq=146
+2026-05-26 11:05:35.253 | python | stage=processing_started | seq=146
+2026-05-26 11:05:35.296 | python | stage=inference_done | seq=146 | infer_ms=41.89
+2026-05-26 11:05:35.296 | python | stage=sent_to_unity | seq=146 | bytes=1377
+2026-05-26 11:05:35.297 | python | stage=image_received | seq=147
+2026-05-26 11:05:35.297 | python | stage=processing_started | seq=147
+2026-05-26 11:05:35.309 | python | stage=inference_done | seq=147 | infer_ms=11.43
+2026-05-26 11:05:35.309 | python | stage=sent_to_unity | seq=147 | bytes=1377
+2026-05-26 11:05:35.318 | python | stage=image_received | seq=148
+2026-05-26 11:05:35.318 | python | stage=processing_started | seq=148
+2026-05-26 11:05:35.329 | python | stage=inference_done | seq=148 | infer_ms=10.73
+2026-05-26 11:05:35.330 | python | stage=sent_to_unity | seq=148 | bytes=1378
+2026-05-26 11:05:35.348 | python | stage=image_received | seq=149
+2026-05-26 11:05:35.348 | python | stage=processing_started | seq=149
+2026-05-26 11:05:35.360 | python | stage=inference_done | seq=149 | infer_ms=10.75
+2026-05-26 11:05:35.360 | python | stage=sent_to_unity | seq=149 | bytes=1375
+2026-05-26 11:05:35.381 | python | stage=image_received | seq=150
+2026-05-26 11:05:35.381 | python | stage=processing_started | seq=150
+2026-05-26 11:05:35.392 | python | stage=inference_done | seq=150 | infer_ms=10.00
+2026-05-26 11:05:35.393 | python | stage=sent_to_unity | seq=150 | bytes=1373
+2026-05-26 11:05:35.415 | python | stage=image_received | seq=151
+2026-05-26 11:05:35.415 | python | stage=processing_started | seq=151
+2026-05-26 11:05:35.429 | python | stage=inference_done | seq=151 | infer_ms=12.39
+2026-05-26 11:05:35.429 | python | stage=sent_to_unity | seq=151 | bytes=1374
+2026-05-26 11:05:35.445 | python | stage=image_received | seq=152
+2026-05-26 11:05:35.447 | python | stage=processing_started | seq=152
+2026-05-26 11:05:35.456 | python | stage=inference_done | seq=152 | infer_ms=8.78
+2026-05-26 11:05:35.456 | python | stage=sent_to_unity | seq=152 | bytes=1371
+2026-05-26 11:05:35.479 | python | stage=image_received | seq=153
+2026-05-26 11:05:35.479 | python | stage=processing_started | seq=153
+2026-05-26 11:05:35.487 | python | stage=inference_done | seq=153 | infer_ms=8.27
+2026-05-26 11:05:35.487 | python | stage=sent_to_unity | seq=153 | bytes=1377
+2026-05-26 11:05:35.527 | python | stage=image_received | seq=154
+2026-05-26 11:05:35.527 | python | stage=processing_started | seq=154
+2026-05-26 11:05:35.541 | python | stage=inference_done | seq=154 | infer_ms=12.85
+2026-05-26 11:05:35.541 | python | stage=sent_to_unity | seq=154 | bytes=1372
+2026-05-26 11:05:35.558 | python | stage=image_received | seq=155
+2026-05-26 11:05:35.558 | python | stage=processing_started | seq=155
+2026-05-26 11:05:35.569 | python | stage=inference_done | seq=155 | infer_ms=10.27
+2026-05-26 11:05:35.569 | python | stage=sent_to_unity | seq=155 | bytes=1368
+2026-05-26 11:05:35.589 | python | stage=image_received | seq=156
+2026-05-26 11:05:35.589 | python | stage=processing_started | seq=156
+2026-05-26 11:05:35.615 | python | stage=inference_done | seq=156 | infer_ms=24.95
+2026-05-26 11:05:35.616 | python | stage=sent_to_unity | seq=156 | bytes=1368
+2026-05-26 11:05:35.622 | python | stage=image_received | seq=157
+2026-05-26 11:05:35.622 | python | stage=processing_started | seq=157
+2026-05-26 11:05:35.629 | python | stage=inference_done | seq=157 | infer_ms=7.46
+2026-05-26 11:05:35.629 | python | stage=sent_to_unity | seq=157 | bytes=1376
+2026-05-26 11:05:35.654 | python | stage=image_received | seq=158
+2026-05-26 11:05:35.654 | python | stage=processing_started | seq=158
+2026-05-26 11:05:35.664 | python | stage=inference_done | seq=158 | infer_ms=10.68
+2026-05-26 11:05:35.665 | python | stage=sent_to_unity | seq=158 | bytes=1371
+2026-05-26 11:05:35.686 | python | stage=image_received | seq=159
+2026-05-26 11:05:35.686 | python | stage=processing_started | seq=159
+2026-05-26 11:05:35.697 | python | stage=inference_done | seq=159 | infer_ms=10.21
+2026-05-26 11:05:35.697 | python | stage=sent_to_unity | seq=159 | bytes=1371
+2026-05-26 11:05:35.717 | python | stage=image_received | seq=160
+2026-05-26 11:05:35.717 | python | stage=processing_started | seq=160
+2026-05-26 11:05:35.725 | python | stage=inference_done | seq=160 | infer_ms=6.50
+2026-05-26 11:05:35.725 | python | stage=sent_to_unity | seq=160 | bytes=1375
+2026-05-26 11:05:35.751 | python | stage=image_received | seq=161
+2026-05-26 11:05:35.751 | python | stage=processing_started | seq=161
+2026-05-26 11:05:35.761 | python | stage=inference_done | seq=161 | infer_ms=10.61
+2026-05-26 11:05:35.761 | python | stage=sent_to_unity | seq=161 | bytes=1374
+2026-05-26 11:05:35.797 | python | stage=image_received | seq=162
+2026-05-26 11:05:35.798 | python | stage=processing_started | seq=162
+2026-05-26 11:05:35.806 | python | stage=inference_done | seq=162 | infer_ms=8.46
+2026-05-26 11:05:35.806 | python | stage=sent_to_unity | seq=162 | bytes=1374
+2026-05-26 11:05:35.831 | python | stage=image_received | seq=163
+2026-05-26 11:05:35.831 | python | stage=processing_started | seq=163
+2026-05-26 11:05:35.839 | python | stage=inference_done | seq=163 | infer_ms=8.67
+2026-05-26 11:05:35.840 | python | stage=sent_to_unity | seq=163 | bytes=1380
+2026-05-26 11:05:35.861 | python | stage=image_received | seq=164
+2026-05-26 11:05:35.862 | python | stage=processing_started | seq=164
+2026-05-26 11:05:35.872 | python | stage=inference_done | seq=164 | infer_ms=10.08
+2026-05-26 11:05:35.872 | python | stage=sent_to_unity | seq=164 | bytes=1379
+2026-05-26 11:05:35.894 | python | stage=image_received | seq=165
+2026-05-26 11:05:35.894 | python | stage=processing_started | seq=165
+2026-05-26 11:05:35.904 | python | stage=inference_done | seq=165 | infer_ms=10.22
+2026-05-26 11:05:35.904 | python | stage=sent_to_unity | seq=165 | bytes=1377
+2026-05-26 11:05:35.926 | python | stage=image_received | seq=166
+2026-05-26 11:05:35.926 | python | stage=processing_started | seq=166
+2026-05-26 11:05:35.954 | python | stage=inference_done | seq=166 | infer_ms=28.03
+2026-05-26 11:05:35.955 | python | stage=sent_to_unity | seq=166 | bytes=1376
+2026-05-26 11:05:35.958 | python | stage=image_received | seq=167
+2026-05-26 11:05:35.958 | python | stage=processing_started | seq=167
+2026-05-26 11:05:35.966 | python | stage=inference_done | seq=167 | infer_ms=7.85
+2026-05-26 11:05:35.966 | python | stage=sent_to_unity | seq=167 | bytes=1371
+2026-05-26 11:05:35.990 | python | stage=image_received | seq=168
+2026-05-26 11:05:35.990 | python | stage=processing_started | seq=168
+2026-05-26 11:05:35.994 | python | stage=inference_done | seq=168 | infer_ms=5.06
+2026-05-26 11:05:35.995 | python | stage=sent_to_unity | seq=168 | bytes=1367
+2026-05-26 11:05:36.021 | python | stage=image_received | seq=169
+2026-05-26 11:05:36.021 | python | stage=processing_started | seq=169
+2026-05-26 11:05:36.031 | python | stage=inference_done | seq=169 | infer_ms=10.02
+2026-05-26 11:05:36.031 | python | stage=sent_to_unity | seq=169 | bytes=1372
+2026-05-26 11:05:36.054 | python | stage=image_received | seq=170
+2026-05-26 11:05:36.054 | python | stage=processing_started | seq=170
+2026-05-26 11:05:36.060 | python | stage=inference_done | seq=170 | infer_ms=6.49
+2026-05-26 11:05:36.061 | python | stage=sent_to_unity | seq=170 | bytes=1373
+2026-05-26 11:05:36.101 | python | stage=image_received | seq=171
+2026-05-26 11:05:36.101 | python | stage=processing_started | seq=171
+2026-05-26 11:05:36.110 | python | stage=inference_done | seq=171 | infer_ms=8.29
+2026-05-26 11:05:36.110 | python | stage=sent_to_unity | seq=171 | bytes=1374
+2026-05-26 11:05:36.134 | python | stage=image_received | seq=172
+2026-05-26 11:05:36.134 | python | stage=processing_started | seq=172
+2026-05-26 11:05:36.144 | python | stage=inference_done | seq=172 | infer_ms=10.30
+2026-05-26 11:05:36.144 | python | stage=sent_to_unity | seq=172 | bytes=1374
+2026-05-26 11:05:36.167 | python | stage=image_received | seq=173
+2026-05-26 11:05:36.167 | python | stage=processing_started | seq=173
+2026-05-26 11:05:36.179 | python | stage=inference_done | seq=173 | infer_ms=11.68
+2026-05-26 11:05:36.179 | python | stage=sent_to_unity | seq=173 | bytes=1377
+2026-05-26 11:05:36.198 | python | stage=image_received | seq=174
+2026-05-26 11:05:36.198 | python | stage=processing_started | seq=174
+2026-05-26 11:05:36.206 | python | stage=inference_done | seq=174 | infer_ms=8.38
+2026-05-26 11:05:36.207 | python | stage=sent_to_unity | seq=174 | bytes=1371
+2026-05-26 11:05:36.229 | python | stage=image_received | seq=175
+2026-05-26 11:05:36.229 | python | stage=processing_started | seq=175
+2026-05-26 11:05:36.239 | python | stage=inference_done | seq=175 | infer_ms=8.96
+2026-05-26 11:05:36.239 | python | stage=sent_to_unity | seq=175 | bytes=1377
+2026-05-26 11:05:36.261 | python | stage=image_received | seq=176
+2026-05-26 11:05:36.261 | python | stage=processing_started | seq=176
+2026-05-26 11:05:36.293 | python | stage=inference_done | seq=176 | infer_ms=30.04
+2026-05-26 11:05:36.293 | python | stage=sent_to_unity | seq=176 | bytes=1370
+2026-05-26 11:05:36.293 | python | stage=image_received | seq=177
+2026-05-26 11:05:36.293 | python | stage=processing_started | seq=177
+2026-05-26 11:05:36.303 | python | stage=inference_done | seq=177 | infer_ms=8.88
+2026-05-26 11:05:36.303 | python | stage=sent_to_unity | seq=177 | bytes=1377
+2026-05-26 11:05:36.325 | python | stage=image_received | seq=178
+2026-05-26 11:05:36.327 | python | stage=processing_started | seq=178
+2026-05-26 11:05:36.337 | python | stage=inference_done | seq=178 | infer_ms=9.85
+2026-05-26 11:05:36.337 | python | stage=sent_to_unity | seq=178 | bytes=1375
+2026-05-26 11:05:36.373 | python | stage=image_received | seq=179
+2026-05-26 11:05:36.374 | python | stage=processing_started | seq=179
+2026-05-26 11:05:36.384 | python | stage=inference_done | seq=179 | infer_ms=10.91
+2026-05-26 11:05:36.384 | python | stage=sent_to_unity | seq=179 | bytes=1374
+2026-05-26 11:05:36.407 | python | stage=image_received | seq=180
+2026-05-26 11:05:36.407 | python | stage=processing_started | seq=180
+2026-05-26 11:05:36.416 | python | stage=inference_done | seq=180 | infer_ms=8.19
+2026-05-26 11:05:36.416 | python | stage=sent_to_unity | seq=180 | bytes=1373
+2026-05-26 11:05:36.438 | python | stage=image_received | seq=181
+2026-05-26 11:05:36.438 | python | stage=processing_started | seq=181
+2026-05-26 11:05:36.445 | python | stage=inference_done | seq=181 | infer_ms=7.09
+2026-05-26 11:05:36.446 | python | stage=sent_to_unity | seq=181 | bytes=1377
+2026-05-26 11:05:36.470 | python | stage=image_received | seq=182
+2026-05-26 11:05:36.470 | python | stage=processing_started | seq=182
+2026-05-26 11:05:36.477 | python | stage=inference_done | seq=182 | infer_ms=7.62
+2026-05-26 11:05:36.477 | python | stage=sent_to_unity | seq=182 | bytes=1367
+2026-05-26 11:05:36.501 | python | stage=image_received | seq=183
+2026-05-26 11:05:36.501 | python | stage=processing_started | seq=183
+2026-05-26 11:05:36.510 | python | stage=inference_done | seq=183 | infer_ms=8.26
+2026-05-26 11:05:36.510 | python | stage=sent_to_unity | seq=183 | bytes=1374
+2026-05-26 11:05:36.535 | python | stage=image_received | seq=184
+2026-05-26 11:05:36.535 | python | stage=processing_started | seq=184
+2026-05-26 11:05:36.544 | python | stage=inference_done | seq=184 | infer_ms=9.15
+2026-05-26 11:05:36.544 | python | stage=sent_to_unity | seq=184 | bytes=1371
+2026-05-26 11:05:36.566 | python | stage=image_received | seq=185
+2026-05-26 11:05:36.566 | python | stage=processing_started | seq=185
+2026-05-26 11:05:36.576 | python | stage=inference_done | seq=185 | infer_ms=9.55
+2026-05-26 11:05:36.576 | python | stage=sent_to_unity | seq=185 | bytes=1372
+2026-05-26 11:05:36.597 | python | stage=image_received | seq=186
+2026-05-26 11:05:36.597 | python | stage=processing_started | seq=186
+2026-05-26 11:05:36.637 | python | stage=inference_done | seq=186 | infer_ms=38.53
+2026-05-26 11:05:36.637 | python | stage=sent_to_unity | seq=186 | bytes=1377
+2026-05-26 11:05:36.637 | python | stage=image_received | seq=187
+2026-05-26 11:05:36.637 | python | stage=processing_started | seq=187
+2026-05-26 11:05:36.652 | python | stage=inference_done | seq=187 | infer_ms=13.88
+2026-05-26 11:05:36.652 | python | stage=sent_to_unity | seq=187 | bytes=1374
+2026-05-26 11:05:36.677 | python | stage=image_received | seq=188
+2026-05-26 11:05:36.677 | python | stage=processing_started | seq=188
+2026-05-26 11:05:36.693 | python | stage=inference_done | seq=188 | infer_ms=15.31
+2026-05-26 11:05:36.693 | python | stage=sent_to_unity | seq=188 | bytes=1372
+2026-05-26 11:05:36.710 | python | stage=image_received | seq=189
+2026-05-26 11:05:36.710 | python | stage=processing_started | seq=189
+2026-05-26 11:05:36.729 | python | stage=inference_done | seq=189 | infer_ms=18.82
+2026-05-26 11:05:36.729 | python | stage=sent_to_unity | seq=189 | bytes=1372
+2026-05-26 11:05:36.741 | python | stage=image_received | seq=190
+2026-05-26 11:05:36.741 | python | stage=processing_started | seq=190
+2026-05-26 11:05:36.756 | python | stage=inference_done | seq=190 | infer_ms=14.39
+2026-05-26 11:05:36.757 | python | stage=sent_to_unity | seq=190 | bytes=1373
+2026-05-26 11:05:36.773 | python | stage=image_received | seq=191
+2026-05-26 11:05:36.773 | python | stage=processing_started | seq=191
+2026-05-26 11:05:36.789 | python | stage=inference_done | seq=191 | infer_ms=14.75
+2026-05-26 11:05:36.789 | python | stage=sent_to_unity | seq=191 | bytes=1375
+2026-05-26 11:05:36.805 | python | stage=image_received | seq=192
+2026-05-26 11:05:36.805 | python | stage=processing_started | seq=192
+2026-05-26 11:05:36.820 | python | stage=inference_done | seq=192 | infer_ms=13.34
+2026-05-26 11:05:36.820 | python | stage=sent_to_unity | seq=192 | bytes=1374
+2026-05-26 11:05:36.837 | python | stage=image_received | seq=193
+2026-05-26 11:05:36.837 | python | stage=processing_started | seq=193
+2026-05-26 11:05:36.850 | python | stage=inference_done | seq=193 | infer_ms=12.79
+2026-05-26 11:05:36.850 | python | stage=sent_to_unity | seq=193 | bytes=1375
+2026-05-26 11:05:36.870 | python | stage=image_received | seq=194
+2026-05-26 11:05:36.870 | python | stage=processing_started | seq=194
+2026-05-26 11:05:36.883 | python | stage=inference_done | seq=194 | infer_ms=12.10
+2026-05-26 11:05:36.883 | python | stage=sent_to_unity | seq=194 | bytes=1366
+2026-05-26 11:05:36.901 | python | stage=image_received | seq=195
+2026-05-26 11:05:36.901 | python | stage=processing_started | seq=195
+2026-05-26 11:05:36.919 | python | stage=inference_done | seq=195 | infer_ms=17.14
+2026-05-26 11:05:36.920 | python | stage=sent_to_unity | seq=195 | bytes=1370
+2026-05-26 11:05:36.948 | python | stage=image_received | seq=196
+2026-05-26 11:05:36.950 | python | stage=processing_started | seq=196
+2026-05-26 11:05:36.972 | python | stage=inference_done | seq=196 | infer_ms=22.29
+2026-05-26 11:05:36.972 | python | stage=sent_to_unity | seq=196 | bytes=1371
+2026-05-26 11:05:36.981 | python | stage=image_received | seq=197
+2026-05-26 11:05:36.981 | python | stage=processing_started | seq=197
+2026-05-26 11:05:36.991 | python | stage=inference_done | seq=197 | infer_ms=8.31
+2026-05-26 11:05:36.991 | python | stage=sent_to_unity | seq=197 | bytes=1375
+2026-05-26 11:05:37.013 | python | stage=image_received | seq=198
+2026-05-26 11:05:37.013 | python | stage=processing_started | seq=198
+2026-05-26 11:05:37.021 | python | stage=inference_done | seq=198 | infer_ms=7.82
+2026-05-26 11:05:37.021 | python | stage=sent_to_unity | seq=198 | bytes=1369
+2026-05-26 11:05:37.046 | python | stage=image_received | seq=199
+2026-05-26 11:05:37.047 | python | stage=processing_started | seq=199
+2026-05-26 11:05:37.054 | python | stage=inference_done | seq=199 | infer_ms=7.89
+2026-05-26 11:05:37.055 | python | stage=sent_to_unity | seq=199 | bytes=1366
+2026-05-26 11:05:37.077 | python | stage=image_received | seq=200
+2026-05-26 11:05:37.078 | python | stage=processing_started | seq=200
+2026-05-26 11:05:37.083 | python | stage=inference_done | seq=200 | infer_ms=5.68
+2026-05-26 11:05:37.084 | python | stage=sent_to_unity | seq=200 | bytes=1373
+2026-05-26 11:05:37.091 | python | stage=session_end | extra=source=python

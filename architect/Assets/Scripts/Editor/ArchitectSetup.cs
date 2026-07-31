@@ -60,6 +60,11 @@ public static class ArchitectSetup
         driver.createLimbSticks = true;
         driver.mirrorFlipX = true;
         driver.avatarScale = 3.5f;
+        var geniesDriver = GetOrAdd<GeniesPoseAvatarDriver>(go);
+        geniesDriver.poseReceiver = go.GetComponent<PoseReceiver>();
+        geniesDriver.poseAvatarDriver = driver;
+        geniesDriver.loadOnStart = true;
+        geniesDriver.replaceDebugSkeleton = true;
         GetOrAdd<PoseGestureDetector>(go);
         var bodyTilt = GetOrAdd<BodyTiltInput>(go);
         if (bodyTilt.poseGestureDetector == null)
@@ -114,6 +119,17 @@ public static class ArchitectSetup
         if (bridgeGo.GetComponent<PoseGestureDetector>() == null)
             bridgeGo.AddComponent<PoseGestureDetector>();
 
+        var geniesDriver = GetOrAdd<GeniesPoseAvatarDriver>(bridgeGo);
+        geniesDriver.poseReceiver = bridgeGo.GetComponent<PoseReceiver>();
+        geniesDriver.poseAvatarDriver = bridgeGo.GetComponent<PoseAvatarDriver>();
+        geniesDriver.loadOnStart = true;
+        geniesDriver.replaceDebugSkeleton = true;
+        if (bridgeGo.GetComponent<BodyTiltInput>() == null)
+        {
+            var bodyTilt = bridgeGo.AddComponent<BodyTiltInput>();
+            bodyTilt.poseGestureDetector = bridgeGo.GetComponent<PoseGestureDetector>();
+        }
+
         var dodgeGo = GetOrCreate("DodgeGame");
         GetOrAdd<DodgeGameManager>(dodgeGo);
 
@@ -129,11 +145,13 @@ public static class ArchitectSetup
         coinMineMgr.gestureDetector = bridgeGo.GetComponent<PoseGestureDetector>();
 
         var testGo = GetOrCreate("PoseTestMode");
-        GetOrAdd<PoseTestMode>(testGo);
+        var poseTest = GetOrAdd<PoseTestMode>(testGo);
+        poseTest.geniesAvatarDriver = geniesDriver;
         var ocrGo = GetOrCreate("OcrMode");
         GetOrAdd<OcrMode>(ocrGo);
         var clockGo = GetOrCreate("ClockMode");
-        GetOrAdd<ClockMode>(clockGo);
+        var clockMode = GetOrAdd<ClockMode>(clockGo);
+        clockMode.geniesAvatarDriver = geniesDriver;
 
         var selectorGo = GetOrCreate("GameSelector");
         var selector = GetOrAdd<ArchitectGameSelector>(selectorGo);

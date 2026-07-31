@@ -4,6 +4,8 @@ using UnityEditor;
 using TMPro;
 using UnityEditor.Events;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 
 /// <summary>
 /// Editor menu that creates the full game UI and wires everything automatically.
@@ -72,38 +74,61 @@ public static class ArchitectUIBuilder
         var canvasGo = new GameObject("GameCanvas");
         var canvas = canvasGo.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.pixelPerfect = false;
         var scaler = canvasGo.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight = 0.5f;
         canvasGo.AddComponent<GraphicRaycaster>();
-        if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
-        {
-            var es = new GameObject("EventSystem");
-            es.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-            Undo.RegisterCreatedObjectUndo(es, "Create EventSystem");
-        }
+        EnsureEventSystemUsesInputSystem();
 
         // ── Mode Select Panel ──
         var modePanel = CreatePanel(canvasGo.transform, "ModeSelectPanel");
         StretchFill(modePanel);
         modePanel.GetComponent<Image>().color = new Color(0.12f, 0.12f, 0.18f, 0.95f);
 
-        var title = CreateTMPText(modePanel.transform, "TitleText", "ARCHITECT", 52, TextAlignmentOptions.Center);
-        SetAnchored(title, new Vector2(0.5f, 0.78f), new Vector2(600, 70));
+        var title = CreateTMPText(modePanel.transform, "TitleText", "ARCHITECT", 64, TextAlignmentOptions.Center);
+        SetAnchored(title, new Vector2(0.5f, 0.78f), new Vector2(700, 80));
 
-        var subtitle = CreateTMPText(modePanel.transform, "Subtitle", "Choose a mode", 24, TextAlignmentOptions.Center);
-        SetAnchored(subtitle, new Vector2(0.5f, 0.70f), new Vector2(400, 35));
+        var subtitle = CreateTMPText(modePanel.transform, "Subtitle", "Choose a mode", 30, TextAlignmentOptions.Center);
+        SetAnchored(subtitle, new Vector2(0.5f, 0.70f), new Vector2(480, 40));
         subtitle.GetComponent<TMP_Text>().color = new Color(0.7f, 0.7f, 0.7f);
 
-        // 4-column mode grid
+        var avatarSectionLabel = CreateTMPText(modePanel.transform, "AvatarSelectLabel", "Avatar", 30, TextAlignmentOptions.Center);
+        SetAnchored(avatarSectionLabel, new Vector2(0.5f, 0.62f), new Vector2(240, 36));
+        avatarSectionLabel.GetComponent<TMP_Text>().color = new Color(0.75f, 0.75f, 0.8f);
+
+        var avatarPrevBtn = CreateTMPButton(modePanel.transform, "AvatarPrevButton", "<");
+        SetAnchored(avatarPrevBtn, new Vector2(0.38f, 0.56f), new Vector2(56, 52));
+        avatarPrevBtn.GetComponent<Image>().color = new Color(0.28f, 0.28f, 0.34f, 1f);
+
+        var avatarStatus = CreateTMPText(modePanel.transform, "AvatarStatusText", "Debug Skeleton", 30, TextAlignmentOptions.Center);
+        SetAnchored(avatarStatus, new Vector2(0.5f, 0.56f), new Vector2(480, 56));
+        var avatarStatusTmp = avatarStatus.GetComponent<TMP_Text>();
+        avatarStatusTmp.color = new Color(0.92f, 0.92f, 0.96f, 1f);
+
+        var avatarNextBtn = CreateTMPButton(modePanel.transform, "AvatarNextButton", ">");
+        SetAnchored(avatarNextBtn, new Vector2(0.62f, 0.56f), new Vector2(56, 52));
+        avatarNextBtn.GetComponent<Image>().color = new Color(0.28f, 0.28f, 0.34f, 1f);
+
+        var avatarSelectorGo = new GameObject("GeniesAvatarMenuSelector");
+        avatarSelectorGo.transform.SetParent(modePanel.transform, false);
+        var avatarSelector = avatarSelectorGo.AddComponent<GeniesAvatarMenuSelector>();
+        var geniesDriver = Object.FindFirstObjectByType<GeniesPoseAvatarDriver>(FindObjectsInactive.Include);
+        avatarSelector.avatarDriver = geniesDriver;
+        avatarSelector.statusLabel = avatarStatusTmp;
+        avatarSelector.prevButton = avatarPrevBtn.GetComponent<Button>();
+        avatarSelector.nextButton = avatarNextBtn.GetComponent<Button>();
+
+        // 4-column mode grid. Descriptions sit clearly BELOW their button (enough gap so a
+        // two-line description never overlaps the button above it).
         float left = 0.14f;
         float gapX = 0.24f;
-        float row1BtnY = 0.56f;
-        float row1DescY = 0.52f;
-        float row2BtnY = 0.40f;
-        float row2DescY = 0.36f;
+        float row1BtnY = 0.46f;
+        float row1DescY = 0.385f;
+        float row2BtnY = 0.30f;
+        float row2DescY = 0.225f;
+        Vector2 descSize = new Vector2(560, 60);
 
         // Pose Dodge, Single-Leg Balance, Lean Balance, and OCR are hidden from the menu.
 
@@ -113,23 +138,23 @@ public static class ArchitectUIBuilder
             coinMineBtnGo = CreateTMPButton(modePanel.transform, "CoinMineButton", "Coin Collector");
             SetAnchored(coinMineBtnGo, new Vector2(0.5f, row1BtnY), new Vector2(320, 58));
             coinMineBtnGo.GetComponent<Image>().color = new Color(0.9f, 0.7f, 0.15f, 1f);
-            var coinDesc = CreateTMPText(modePanel.transform, "CoinCollectorDescription", "Collect lane coins by leaning left/right.", 17, TextAlignmentOptions.Center);
-            SetAnchored(coinDesc, new Vector2(0.5f, row1DescY), new Vector2(360, 30));
+            var coinDesc = CreateTMPText(modePanel.transform, "CoinCollectorDescription", "Collect lane coins by leaning left/right.", 24, TextAlignmentOptions.Top);
+            SetAnchored(coinDesc, new Vector2(0.5f, row1DescY), descSize);
             coinDesc.GetComponent<TMP_Text>().color = new Color(0.83f, 0.83f, 0.86f);
         }
 
         var testBtn = CreateTMPButton(modePanel.transform, "PoseTestButton", "Pose Test");
         SetAnchored(testBtn, new Vector2(left + gapX * 0.5f, row2BtnY), new Vector2(320, 58));
         testBtn.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.5f, 1f);
-        var testDesc = CreateTMPText(modePanel.transform, "PoseTestDescription", "Inspect live keypoint and gesture signals.", 17, TextAlignmentOptions.Center);
-        SetAnchored(testDesc, new Vector2(left + gapX * 0.5f, row2DescY), new Vector2(360, 30));
+        var testDesc = CreateTMPText(modePanel.transform, "PoseTestDescription", "Inspect live keypoint and gesture signals.", 24, TextAlignmentOptions.Top);
+        SetAnchored(testDesc, new Vector2(left + gapX * 0.5f, row2DescY), descSize);
         testDesc.GetComponent<TMP_Text>().color = new Color(0.83f, 0.83f, 0.86f);
 
         var clockBtn = CreateTMPButton(modePanel.transform, "ClockButton", "Clock ROI");
         SetAnchored(clockBtn, new Vector2(left + gapX * 2.5f, row2BtnY), new Vector2(320, 58));
         clockBtn.GetComponent<Image>().color = new Color(0.45f, 0.3f, 0.75f, 1f);
-        var clockDesc = CreateTMPText(modePanel.transform, "ClockDescription", "Live clock region and pose avatar for latency measurement.", 17, TextAlignmentOptions.Center);
-        SetAnchored(clockDesc, new Vector2(left + gapX * 2.5f, row2DescY), new Vector2(400, 30));
+        var clockDesc = CreateTMPText(modePanel.transform, "ClockDescription", "Live clock region and pose avatar for latency measurement.", 24, TextAlignmentOptions.Top);
+        SetAnchored(clockDesc, new Vector2(left + gapX * 2.5f, row2DescY), descSize);
         clockDesc.GetComponent<TMP_Text>().color = new Color(0.83f, 0.83f, 0.86f);
 
         // ────────────────────────────────────────────
@@ -337,6 +362,12 @@ public static class ArchitectUIBuilder
             SetAnchored(coinGoLabel, new Vector2(0.5f, 0.68f), new Vector2(400, 60));
             var coinGoScore = CreateTMPText(coinGameOver.transform, "CoinGoScore", "Coins: 0", 32, TextAlignmentOptions.Center);
             SetAnchored(coinGoScore, new Vector2(0.5f, 0.56f), new Vector2(400, 50));
+            var coinRestartBtn = CreateTMPButton(coinGameOver.transform, "CoinRestartButton", "Restart");
+            SetAnchored(coinRestartBtn, new Vector2(0.5f, 0.40f), new Vector2(220, 55));
+            coinRestartBtn.GetComponent<Image>().color = new Color(0.9f, 0.7f, 0.15f, 1f);
+            var coinGameOverExitBtn = CreateTMPButton(coinGameOver.transform, "CoinGameOverExitButton", "Exit");
+            SetAnchored(coinGameOverExitBtn, new Vector2(0.5f, 0.30f), new Vector2(220, 55));
+            coinGameOverExitBtn.GetComponent<Image>().color = new Color(0.65f, 0.2f, 0.2f, 1f);
             var coinExitBtn = CreateTMPButton(coinMineUI.transform, "CoinExitButton", "Exit");
             SetAnchoredCorner(coinExitBtn, Corner.TopRight, new Vector2(-20, -20), new Vector2(180, 46));
             coinExitBtn.GetComponent<Image>().color = new Color(0.65f, 0.2f, 0.2f, 1f);
@@ -354,7 +385,9 @@ public static class ArchitectUIBuilder
             coinMineMgr.bodyTiltInput = Object.FindFirstObjectByType<BodyTiltInput>(FindObjectsInactive.Include);
             coinMineMgr.gestureDetector = Object.FindFirstObjectByType<PoseGestureDetector>(FindObjectsInactive.Include);
             WireButton(coinStartBtn, coinMineMgr, nameof(CoinMineGameManager.StartGame));
-            WireButton(coinExitBtn, selector, nameof(ArchitectGameSelector.ReturnToStartMenuScene));
+            WireButton(coinRestartBtn, coinMineMgr, nameof(CoinMineGameManager.StartGame));
+            WireButton(coinGameOverExitBtn, coinMineMgr, nameof(CoinMineGameManager.ExitToMenu));
+            WireButton(coinExitBtn, coinMineMgr, nameof(CoinMineGameManager.ExitToMenu));
             EditorUtility.SetDirty(coinMineMgr);
         }
 
@@ -402,7 +435,7 @@ public static class ArchitectUIBuilder
         var syncTmp = syncFrameText.GetComponent<TMP_Text>();
         syncTmp.color = new Color(0.9f, 0.9f, 0.9f, 0.8f);
         syncTmp.overflowMode = TextOverflowModes.Overflow;
-        syncTmp.enableWordWrapping = false;
+        syncTmp.textWrappingMode = TextWrappingModes.NoWrap;
         var syncComp = syncGo.AddComponent<FrameSyncIndicator>();
         syncComp.indicator = syncIndicator.GetComponent<Image>();
         syncComp.frameCountText = syncTmp;
@@ -514,6 +547,7 @@ public static class ArchitectUIBuilder
             testMode.swayLabel = swayL.GetComponent<TMP_Text>();
             testMode.stabilityLabel = stableL.GetComponent<TMP_Text>();
             testMode.keypointInfoLabel = kpInfo.GetComponent<TMP_Text>();
+            testMode.geniesAvatarDriver = geniesDriver;
             EditorUtility.SetDirty(testMode);
         }
 
@@ -522,6 +556,11 @@ public static class ArchitectUIBuilder
             clockMode.roiPreviewImage = clockRaw;
             clockMode.statusLabel = clockStatus.GetComponent<TMP_Text>();
             clockMode.infoLabel = clockInfoTmp;
+            clockMode.geniesAvatarDriver = geniesDriver;
+            // Split screen: transferred ROI image on the right half, avatar on the left half at a decent size.
+            clockMode.rightPanelWidthFraction = 0.5f;
+            clockMode.avatarOffsetX = -4.5f;
+            clockMode.clockAvatarScale = 8.5f;
             EditorUtility.SetDirty(clockMode);
         }
 
@@ -543,6 +582,8 @@ public static class ArchitectUIBuilder
         var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(activeScene);
         UnityEditor.SceneManagement.EditorSceneManager.SaveScene(activeScene);
+
+        ArchitectUITextQualityFix.ApplyToScene();
 
         Selection.activeGameObject = canvasGo;
         Debug.Log("[Architect] Game UI rebuilt, all game panels hidden, scene saved. Press Play.");
@@ -566,8 +607,19 @@ public static class ArchitectUIBuilder
         tmp.fontSize = size;
         tmp.alignment = align;
         tmp.color = Color.white;
-        tmp.enableWordWrapping = true;
-        tmp.overflowMode = TextOverflowModes.Ellipsis;
+        tmp.richText = true;
+        tmp.raycastTarget = false;
+        tmp.enableAutoSizing = false;
+        tmp.textWrappingMode = TextWrappingModes.Normal;
+        tmp.overflowMode = TextOverflowModes.Overflow;
+        tmp.enableKerning = true;
+        if (TMP_Settings.defaultFontAsset != null)
+            tmp.font = TMP_Settings.defaultFontAsset;
+        else
+        {
+            var font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+            if (font != null) tmp.font = font;
+        }
         return go;
     }
 
@@ -576,7 +628,7 @@ public static class ArchitectUIBuilder
         var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         go.transform.SetParent(parent, false);
         go.GetComponent<Image>().color = new Color(0.22f, 0.55f, 0.85f, 1f);
-        var textGo = CreateTMPText(go.transform, "Text", label, 24, TextAlignmentOptions.Center);
+        var textGo = CreateTMPText(go.transform, "Text", label, 28, TextAlignmentOptions.Center);
         StretchFill(textGo);
         return go;
     }
@@ -708,5 +760,22 @@ public static class ArchitectUIBuilder
         if (method == null) return;
         UnityEventTools.AddVoidPersistentListener(btn.onClick,
             (UnityAction)System.Delegate.CreateDelegate(typeof(UnityAction), target, method));
+    }
+
+    static void EnsureEventSystemUsesInputSystem()
+    {
+        var existing = Object.FindFirstObjectByType<EventSystem>(FindObjectsInactive.Include);
+        if (existing == null)
+        {
+            var es = new GameObject("EventSystem");
+            es.AddComponent<EventSystem>();
+            var module = es.AddComponent<InputSystemUIInputModule>();
+            module.AssignDefaultActions();
+            Undo.RegisterCreatedObjectUndo(es, "Create EventSystem");
+            return;
+        }
+
+        ArchitectEventSystemInputFix.UpgradeEventSystem(existing.gameObject);
+        EditorUtility.SetDirty(existing.gameObject);
     }
 }

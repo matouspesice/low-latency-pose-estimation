@@ -1,0 +1,62 @@
+{
+  "frames_per_run": 150,
+  "pause_between_runs_sec": 2,
+  "trace_dir": "traces",
+  "report_output": "pipeline_trace_report.html",
+  "python": "python",
+  "base_args": [
+    "--udp-port", "5555",
+    "--proc-disable",
+    "--pipeline-trace"
+  ],
+  "runs": [
+    {
+      "label": "01_baseline",
+      "args": ["--run-label", "01_baseline", "--no-window", "--no-viz"]
+    },
+    {
+      "label": "02_proc_on",
+      "args": ["--run-label", "02_proc_on", "--no-window", "--no-viz", "--proc-enable"]
+    },
+    {
+      "label": "03_window_on",
+      "args": ["--run-label", "03_window_on", "--no-viz"]
+    },
+    {
+      "label": "04_viz_on",
+      "args": ["--run-label", "04_viz_on", "--no-window"]
+    },
+    {
+      "label": "05_window_viz",
+      "args": ["--run-label", "05_window_viz"]
+    },
+    {
+      "label": "06_smooth_pose",
+      "args": ["--run-label", "06_smooth_pose", "--no-window", "--no-viz", "--smooth-pose", "0.6"]
+    },
+    {
+      "label": "07_clock_stream",
+      "args": ["--run-label", "07_clock_stream", "--no-window", "--no-viz", "--clock-stream-enable"]
+    },
+    {
+      "label": "08_no_threaded",
+      "args": ["--run-label", "08_no_threaded", "--no-threaded", "--no-window", "--no-viz"]
+    },
+    {
+      "label": "09_det_freq_1",
+      "args": ["--run-label", "09_det_freq_1", "--no-window", "--no-viz", "--det-frequency", "1"]
+    },
+    {
+      "label": "10_det_freq_30",
+      "args": ["--run-label", "10_det_freq_30", "--no-window", "--no-viz", "--det-frequency", "30"]
+    },
+    {
+      "label": "11_mode_balanced",
+      "args": ["--run-label", "11_mode_balanced", "--no-window", "--no-viz", "--mode", "balanced"]
+    },
+    {
+      "label": "12_res_1280x720",
+      "args": ["--run-label", "12_res_1280x720", "--no-window", "--no-viz", "--width", "1280", "--height", "720"]
+    }
+  ]
+}

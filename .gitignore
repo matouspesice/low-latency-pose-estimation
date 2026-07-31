@@ -1,6 +1,17 @@
 # Local latency dumps (opt-in via pose.json / --log-latency + --latency-csv)
 app/latency_live.csv
 
+# Live per-frame trace output and generated report (benchmark traces are kept in app/traces/)
+app/pipeline_trace.txt
+app/pipeline_trace_report.html
+
+# Genies avatar SDK (427 MB; install separately like the Spinnaker SDK)
+architect/Packages/com.genies.avatar-sdk.client/
+
+# IDE and Unity caches
+architect/.vs/
+architect/cache/
+
 # Python virtual environments
 .venv/
 .venv310/
@@ -38,3 +49,7 @@ spinnaker_python-*/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Genies SDK client credentials (obfuscated ClientId/secret; configure locally)
+architect/Assets/Genies/Resources/GeniesAuthSettings.bytes
+architect/Assets/Genies/Resources/GeniesAuthSettings.bytes.meta

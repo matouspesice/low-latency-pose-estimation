@@ -20,6 +20,7 @@
   "udp_host": "127.0.0.1",
   "log_latency": false,
   "latency_csv": "",
+  "pipeline_trace": "",
   "ocr_enable": false,
   "ocr_backend": "tesseract",
   "ocr_rapid_use_text_det": false,

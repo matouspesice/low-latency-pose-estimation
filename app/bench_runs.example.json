@@ -1,0 +1,26 @@
+{
+  "frames_per_run": 200,
+  "pause_between_runs_sec": 3,
+  "trace_dir": "traces",
+  "report_output": "pipeline_trace_report.html",
+  "python": ".venv310/Scripts/python.exe",
+  "base_args": [
+    "--udp-port", "5555",
+    "--no-window",
+    "--pipeline-trace"
+  ],
+  "runs": [
+    {
+      "label": "proc_on",
+      "args": ["--run-label", "proc_on"]
+    },
+    {
+      "label": "proc_off",
+      "args": ["--run-label", "proc_off", "--proc-disable"]
+    },
+    {
+      "label": "threaded",
+      "args": ["--run-label", "threaded", "--threaded", "--proc-disable"]
+    }
+  ]
+}
