@@ -2,6 +2,11 @@
 
 All notable project changes are documented in this file.
 
+## 20.11.2026
+
+- `docs/LATENCY_AUDIT.md`: added an audit of the full camera → `pose.py` → UDP → Unity → screen chain. It lists where latency accumulates outside inference (stacked smoothing, Unity frame ordering, camera cadence, possible CPU fallback of ONNX Runtime), the gaps in the current latency instrumentation, reproduced functional problems, and a test plan for verifying the findings on the FLIR + GPU + Unity setup. No runtime code was changed.
+- `README.md`: added a pointer to the audit.
+
 ## 20.05.2026
 
 - `architect`: hid OCR, Pose Dodge, Single-Leg Balance, and Lean Balance from the start menu (kept Coin Collector, Pose Test, Clock ROI). Clock ROI description no longer references OCR; split view keeps live clock region and pose avatar visible for latency measurement.

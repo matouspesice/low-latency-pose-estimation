@@ -86,6 +86,10 @@ Use `--proc-disable` for raw baseline runs.
 
 Detailed description and benchmark numbers: `docs/POSE_PROCESSING_OPTIMIZATION.md`.
 
+## Latency audit
+
+`docs/LATENCY_AUDIT.md` reviews the whole chain from camera to screen: where the lag between body and screen comes from, what the current latency tooling does not measure, known functional problems, and a test plan for the FLIR + GPU + Unity setup.
+
 ## Live clock ROI image stream (Unity)
 
 The **Architect** Unity project can show a **camera crop of a wall clock** (for motion-to-photon latency measurement) while pose keypoints still drive games and the avatar.
